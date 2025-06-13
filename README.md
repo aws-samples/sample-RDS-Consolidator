@@ -52,7 +52,7 @@ The default display format of the TimeStamp column is **"YYYY-mm-dd HH:MM"**. Th
 
 ### 4. Import the csv in your Quicksight dataset for analysis
 
-To be provided later...
+To be provided later....
 
 ## What are the data collected by the bash script?
 
