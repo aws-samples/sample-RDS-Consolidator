@@ -23,6 +23,7 @@
 ##  V15b: Adding a Display date variable (DISPLAY_DATE_FORMAT) for the Timestamp column. Default value is "%d/%m/%Y %H:%M"
 ##  V15c: Added account-name, storage-type and service-type columns to the report.
 ##  V15d: Replace Account-name with AccountID. Change default Timestamp output. Update Service type.
+##  V15e: Fix column order header
 ##
 ##################################################################################################
 
@@ -366,7 +367,7 @@ printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-40s %-15s %-8s %-
     "---------" "-------------" "----------" "------" "-------" "-------" "------------" "----------" "------------" "-----" "-----" "-----------" "-----------" "---------" "---------" "--------" "--------" \
     "----------" "----------" "------------" "---------" "------------" "------------" "-------------" "-------------" "-------------" >> "$temp_file"
 printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" \
-        "Timestamp" "AccountID" "Instance Name" "RDS Class" "Engine" "Version" "Storage Type" "Multi-AZ" "Read Replica" "RR Primary" "Aurora Role" "vCPUs" "ACUs" "Memory(GiB)" "Storage(GB)" "Free(GB)" "Used(GB)" "CPU Avg%" "CPU Max%" \
+        "Timestamp" "AccountID" "Instance Name" "RDS Class" "Engine" "Storage Type" "Version" "Multi-AZ" "Read Replica" "RR Primary" "Aurora Role" "vCPUs" "ACUs" "Memory(GiB)" "Storage(GB)" "Free(GB)" "Used(GB)" "CPU Avg%" "CPU Max%" \
     "Avg vCPU Used" "Peak vCPU Used" "Mem Free(GiB)" "Mem Used%" "Read IOPS Avg" "Read IOPS Max" "Write IOPS Avg" "Write IOPS Max" "Max Connections" > "$temp_file"
 
 # Define process_instance function
@@ -860,7 +861,7 @@ fi
 
 # Create CSV version
 csv_file="$output_dir/rds_metrics_$(date +%Y%m%d_%H%M%S).csv"
-Header="Timestamp,AccountID,Instance Name,RDS Class,Engine,Version,Storage Type,Multi-AZ,Read Replica,RR Primary,Aurora Role,vCPUs,ACUs,Memory(GiB),Storage(GB),Free Storage(GB),Used Storage(GB),CPU Avg%,CPU Max%,Avg vCPU Used,Peak vCPU Used,Memory Free(GiB),Memory Used%,Read IOPS Avg,Read IOPS Max,Write IOPS Avg,Write IOPS Max,Max Connections,Service Type"
+Header="Timestamp,AccountID,Instance Name,RDS Class,Engine,Storage Type,Version,Multi-AZ,Read Replica,RR Primary,Aurora Role,vCPUs,ACUs,Memory(GiB),Storage(GB),Free Storage(GB),Used Storage(GB),CPU Avg%,CPU Max%,Avg vCPU Used,Peak vCPU Used,Memory Free(GiB),Memory Used%,Read IOPS Avg,Read IOPS Max,Write IOPS Avg,Write IOPS Max,Max Connections,Service Type"
 sed -i '1d' "$temp_file"
 sort -k1,1 -k2,2 "$temp_file" | sed 's/ \+/,/g' | sed 's/,$//g' >> "$csv_file"
 temp_file2="${2:-${csv_file}.tmp}"
