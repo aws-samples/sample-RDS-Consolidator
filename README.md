@@ -14,7 +14,7 @@ This csv file will be used as source dataset to feed a Quicksight dashboard you 
 - A Linux machine with AWS CLI installed or use of the Cloudshell session of the account where the RDS instances are running.
 
 ## Architecture diagram
-![Architecture](Images/RDS-Conso-Architecture-v1.jpg "Architecture")
+![Architecture](Images/RDS-Conso-Architecture-v2.jpg "Architecture")
 
 ## How to use it?
 
@@ -45,11 +45,11 @@ The file **CWGetStatisticsPolicy.json** provides the policy model.
 
 ### 2. Run the script
 
-Once copied the latest version of the script (see versions at the bottom) in your Linux box (or from the Cloudshell session of the account running the RDS instances), you may have to grant execution priviledges with, for instance:  
-`chmod + x get-vcpu-ram-io-v15d-stable.sh`  
+Once copied the latest version of the script (see versions at the bottom) in a CloudShell session of your RDS account (or in a Linux box where AWS CLI is installed), you may have to grant execution priviledges with, for instance:  
+`chmod + x get-vcpu-ram-io-v15e-stable.sh`  
 
-Then simply run the script with 2 optianal parameters:  
-`./get-vcpu-ram-io-v15d-stable.sh [duration] [engine]`  
+Then simply run the script with 2 optional parameters:  
+`./get-vcpu-ram-io-v15e-stable.sh [duration] [engine]`  
 where **duration** define how many days backward do you want statistics (default is 2) and **engine** is a filter on database engine for a restrictive data collection. Possible values are: ("postgres" "sqlserver-se" "sqlserver-ee" "sqlserver-web" "sqlserver-xe" "mariadb" "aurora-mysql" "aurora-postgresql" "db2-se" "oracle" "mysql"). Default (blank value) is all.
 
 ### 3. Script Output
