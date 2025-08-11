@@ -46,7 +46,7 @@ The file **CWGetStatisticsPolicy.json** provides the policy model.
 ### 2. Run the script
 
 Once copied the latest version of the script (see versions at the bottom) in a CloudShell session of your RDS account (or in a Linux box where AWS CLI is installed), you may have to grant execution priviledges with, for instance:  
-`chmod + x get-vcpu-ram-io-v15e-stable.sh`  
+`chmod +x get-vcpu-ram-io-v15e-stable.sh`  
 
 Then simply run the script with 2 optional parameters:  
 `./get-vcpu-ram-io-v15e-stable.sh [duration] [engine]`  
