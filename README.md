@@ -52,6 +52,8 @@ Then simply run the script with 2 optional parameters:
 `./get-vcpu-ram-io-v15e-stable.sh [duration] [engine]`  
 where **duration** define how many days backward do you want statistics (default is 2) and **engine** is a filter on database engine for a restrictive data collection. Possible values are: ("postgres" "sqlserver-se" "sqlserver-ee" "sqlserver-web" "sqlserver-xe" "mariadb" "aurora-mysql" "aurora-postgresql" "db2-se" "oracle" "mysql"). Default (blank value) is all.
 
+Optionally, add the `-silent` option to disable terminal output of the data collected.
+
 ### 3. Script Output
 
 The script will generate 2 csv files. One prefix with **"rds_metrics_"** collect the hourly statistics for all the selected engines and, the other, prefixed with "rds_instances_list_" provides configuration informations of the instances analyzed.
@@ -77,6 +79,9 @@ The manifest file need to point to the csv location. In **rds-consolidator-manif
 
 Once updated, upload the manifest file to your S3 bucket next to your csv file.
 
+#### Grant QuickSight access to the S3 bucket
+
+From the QuickSight console, click **Manage QuickSight**, then **Security & permissions**. Under the service list, click **Manage**. In the "Allow access and autodiscovery for these resources" section, click **Select S3 buckets** and check the box for the bucket where you uploaded the output csv file.
 
 #### CloudFormation template deployment
 
@@ -108,11 +113,11 @@ Once successfully completed, the stack output tab provide a direct link to the D
 From Cloudwatch, the script collects hourly statistics about the VCPU/ACU, the RAM, the IOPS and the storage usage. Whenever possible, it collects the average  as well as the peak usage. It also collect configuration information like instance name, engine type and version, shape, Multi-AZ, Read-Replica...
 
 The header of the metrics csv is:
-Timestamp,Instance Name,RDS Class,Engine,Version,Multi-AZ,Read Replica,RR Primary,Aurora Role,vCPUs,ACUs,Memory(GiB),Storage(GB),Free Storage(GB),Used Storage(GB),CPU Avg%,CPU Max%,Avg vCPU Used,Peak vCPU Used,Memory Free(GiB),Memory Used%,Read IOPS Avg,Read IOPS Max,Write IOPS Avg,Write IOPS Max
+Timestamp,Instance Name,RDS Class,Engine,Version,Multi-AZ Status,Multi-AZ Type,Read Replica,RR Primary,Aurora Role,vCPUs,ACUs,Memory(GiB),Storage(GB),Free Storage(GB),Used Storage(GB),CPU Avg%,CPU Max%,Avg vCPU Used,Peak vCPU Used,Memory Free(GiB),Memory Used%,Read IOPS Avg,Read IOPS Max,Write IOPS Avg,Write IOPS Max,Tags
 
 ## Versions
 
-Last update: 2025, June the 26th
+Last update: 2025, August the 13th
 
 - Data collector
   - V7: Collect ACUs avg and max for db.serverless instance class.
@@ -134,11 +139,13 @@ Last update: 2025, June the 26th
   - V15c: Added account-name, storage-type and service-type columns to the report.
   - V15d: Replace Account-name with AccountID. Change default Timestamp output. Update Service type.
   - V15e: Fix column order header
+  - V16a: Extend Multi-AZ to DB and Cluster, added -silent flag for limited terminal output, Merge Read Replica for RDS and Aurora, Collect instance tags, updated help
 
 - QuickSight CloudFormation template
   - V3: Initial template to deploy the dataset, the analysis and the dashboard. Build for CloudWatch collector V15e
   - V4: Change datasource location, dataset name, update parameters and output lists.
-  - V5: update multiples visuals, Added ACUs usage and max connections charts. 
+  - V5: Update multiples visuals, Added ACUs usage and max connections charts. 
+  - V6: Update dataset and overview table with lastest csv format.
 
 - Datasource manifest
   - V1: initial release  

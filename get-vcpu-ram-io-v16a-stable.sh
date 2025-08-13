@@ -12,7 +12,7 @@
 ##  V11: Added RDS instances listing with name and engine in a dedicated CSV file
 ##  V12: Added average vCPU used and peak vCPU used columns
 ##  V13b: Print 0 for missing values in vCPUs, Memory(GiB), Storage(GB), Memory Free(GiB), Memory Used%
-##       Added ACUs column for db.serverless instances
+##        Added ACUs column for db.serverless instances
 ##  V13c: Filter out lines where no Timestamp is reported, csv fixes
 ##  V14a: Added Multi-AZ status to the main report
 ##  V14b: Added RR Primary column showing primary instance name for read replicas
@@ -24,13 +24,15 @@
 ##  V15c: Added account-name, storage-type and service-type columns to the report.
 ##  V15d: Replace Account-name with AccountID. Change default Timestamp output. Update Service type.
 ##  V15e: Fix column order header
+##  V16a: Extend Multi-AZ to DB and Cluster, added -silent flag for limited terminal output, Merge Read Replica for RDS and Aurora,
+##        Collect instance tags, updated help
 ##
 ##################################################################################################
 
 # Functions definition
 # Help function
 show_help() {
-    echo "Usage: $(basename "$0") [PERIOD] [ENGINE]"
+    echo "Usage: $(basename "$0") [OPTIONS] [PERIOD] [ENGINE]"
     echo
     echo "Generate RDS metrics report for specified period and optionally filter by engine type"
     echo "Also generates a CSV file listing all RDS instances with their details including:"
@@ -39,13 +41,23 @@ show_help() {
     echo "  - Engine Version"
     echo "  - Instance Class"
     echo "  - Storage (GB)"
-    echo "  - Multi-AZ status"
-    echo "  - Read Replica status (Yes/No)"
-    echo "  - Read Replica Primary (if applicable)"
+    echo "  - Multi-AZ status (Database/Cluster/None)"
+    echo "  - Read Replica status (includes Aurora Readers)"
+    echo "  - Read Replica Primary (Writer instance for Aurora Readers)"
     echo "  - Aurora Role (Writer/Reader for Aurora engines)"
-    echo "  - Average vCPU Used (CPU usage % × number of vCPUs)"
-    echo "  - Peak vCPU Used (CPU peak % × number of vCPUs)"
+    echo "  - vCPUs and ACUs (for serverless instances)"
+    echo "  - Memory metrics (GiB)"
+    echo "  - Storage metrics (GB)"
+    echo "  - CPU utilization (Average/Maximum %)"
+    echo "  - Average/Peak vCPU Used"
+    echo "  - Memory usage (Free/Used %)"
+    echo "  - IOPS metrics (Read/Write Average/Maximum)"
     echo "  - Max Database Connections"
+    echo "  - Service Type (RDS/DocumentDB)"
+    echo "  - Instance Tags"
+    echo
+    echo "Options:"
+    echo "  -silent   Do not display results on screen, only generate CSV files"
     echo
     echo "Parameters:"
     echo "  PERIOD    Optional: Number of days to report (1-99). Default is 2"
@@ -69,6 +81,7 @@ show_help() {
     echo "  $(basename "$0") 5            # 5-day period, all engines"
     echo "  $(basename "$0") 3 postgres   # 3-day period, postgres only"
     echo "  $(basename "$0") 2 mysql      # 2-day period, mysql only"
+    echo "  $(basename "$0") -silent 2    # Silent mode, 2-day period, CSV only"
     echo
     exit 0
 }
@@ -301,8 +314,32 @@ get_db_info() {
     local instance_id=$1
     aws rds describe-db-instances \
         --db-instance-identifier "$instance_id" \
-        --query 'DBInstances[0].{Storage:AllocatedStorage,Engine:Engine,Version:EngineVersion,MultiAZ:MultiAZ,ReadReplicaSource:ReadReplicaSourceDBInstanceIdentifier,StorageType:StorageType}' \
+        --query 'DBInstances[0].{Storage:AllocatedStorage,Engine:Engine,Version:EngineVersion,MultiAZ:MultiAZ,ReadReplicaSource:ReadReplicaSourceDBInstanceIdentifier,StorageType:StorageType,ClusterIdentifier:DBClusterIdentifier}' \
         --output text
+}
+
+get_cluster_multi_az() {
+    local cluster_id=$1
+    if [ "$cluster_id" != "None" ] && [ -n "$cluster_id" ]; then
+        local cluster_multi_az=$(aws rds describe-db-clusters \
+            --db-cluster-identifier "$cluster_id" \
+            --query 'DBClusters[0].MultiAZ' \
+            --output text 2>/dev/null)
+        
+        # Check if cluster has multiple availability zones (Multi-AZ cluster)
+        local az_count=$(aws rds describe-db-clusters \
+            --db-cluster-identifier "$cluster_id" \
+            --query 'length(DBClusters[0].AvailabilityZones)' \
+            --output text 2>/dev/null)
+        
+        if [ "$cluster_multi_az" == "true" ] || [ "$az_count" -gt 1 ]; then
+            echo "true"
+        else
+            echo "false"
+        fi
+    else
+        echo "false"
+    fi
 }
 
 get_aurora_cluster_id() {
@@ -328,9 +365,52 @@ get_aurora_storage_metrics() {
         --output text
 }
 
-# Variable setting
-EXTRACT_PERIOD=${1:-2}
-ENGINE_TYPE=$2
+get_aurora_writer() {
+    local cluster_id=$1
+    aws rds describe-db-clusters \
+        --db-cluster-identifier "$cluster_id" \
+        --query 'DBClusters[0].DBClusterMembers[?IsClusterWriter==`true`].DBInstanceIdentifier' \
+        --output text
+}
+
+get_instance_tags() {
+    local instance_id=$1
+    local region=$(aws configure get region 2>/dev/null || echo "us-east-1")
+    local account_id=$(aws sts get-caller-identity --query Account --output text 2>/dev/null)
+    local tags=$(aws rds list-tags-for-resource \
+        --resource-name "arn:aws:rds:$region:$account_id:db:$instance_id" \
+        --query 'TagList[].join(`=`, [Key, Value])' \
+        --output text 2>/dev/null | tr '\t' ';')
+    if [ -z "$tags" ] || [ "$tags" == "" ]; then
+        echo "None"
+    else
+        echo "$tags"
+    fi
+}
+
+# Parse command line arguments
+SILENT_MODE=false
+EXTRACT_PERIOD=""
+ENGINE_TYPE=""
+
+for arg in "$@"; do
+    case $arg in
+        -silent)
+            SILENT_MODE=true
+            shift
+            ;;
+        *)
+            if [ -z "$EXTRACT_PERIOD" ]; then
+                EXTRACT_PERIOD="$arg"
+            elif [ -z "$ENGINE_TYPE" ]; then
+                ENGINE_TYPE="$arg"
+            fi
+            ;;
+    esac
+done
+
+# Set default period if not provided
+EXTRACT_PERIOD=${EXTRACT_PERIOD:-2}
 DATE_FORMAT="%Y-%m-%dT%H:%M:%SZ"
 DISPLAY_DATE_FORMAT="%Y-%m-%d %H:%M"
 ACCOUNT_ID="$(aws sts get-caller-identity --query 'Account' --output text 2>/dev/null || echo "Unknown")"
@@ -363,12 +443,12 @@ START_TIME=$(date -u -d "$EXTRACT_PERIOD"' day ago' +"$DATE_FORMAT")
 temp_file=$(mktemp)
 
 # Print header
-printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" \
-    "---------" "-------------" "----------" "------" "-------" "-------" "------------" "----------" "------------" "-----" "-----" "-----------" "-----------" "---------" "---------" "--------" "--------" \
-    "----------" "----------" "------------" "---------" "------------" "------------" "-------------" "-------------" "-------------" >> "$temp_file"
-printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" \
-        "Timestamp" "AccountID" "Instance Name" "RDS Class" "Engine" "Storage Type" "Version" "Multi-AZ" "Read Replica" "RR Primary" "Aurora Role" "vCPUs" "ACUs" "Memory(GiB)" "Storage(GB)" "Free(GB)" "Used(GB)" "CPU Avg%" "CPU Max%" \
-    "Avg vCPU Used" "Peak vCPU Used" "Mem Free(GiB)" "Mem Used%" "Read IOPS Avg" "Read IOPS Max" "Write IOPS Avg" "Write IOPS Max" "Max Connections" > "$temp_file"
+printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
+    "---------" "-------------" "----------" "------" "-------" "-------" "------------" "----------" "------------" "------------" "-----" "-----" "-----------" "-----------" "---------" "---------" "--------" "--------" \
+    "----------" "----------" "------------" "---------" "------------" "------------" "-------------" "-------------" "-------------" "-------------" "-----" >> "$temp_file"
+printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
+        "Timestamp" "AccountID" "Instance Name" "RDS Class" "Engine" "Storage Type" "Version" "Multi-AZ Status" "Multi-AZ Type" "Read Replica" "RR Primary" "Aurora Role" "vCPUs" "ACUs" "Memory(GiB)" "Storage(GB)" "Free(GB)" "Used(GB)" "CPU Avg%" "CPU Max%" \
+    "Avg vCPU Used" "Peak vCPU Used" "Mem Free(GiB)" "Mem Used%" "Read IOPS Avg" "Read IOPS Max" "Write IOPS Avg" "Write IOPS Max" "Max Connections" "Service Type" "Tags" > "$temp_file"
 
 # Define process_instance function
 process_instance() {
@@ -381,21 +461,50 @@ process_instance() {
     # Get instance info (vCPUs and Memory)
     IFS=$'\t' read -r memory_mib vcpu_count <<< "$(get_instance_info "$ec2_type")"
 
-    # Get DB info (engine, multi-AZ, storage, version, read replica source)
-#    IFS=$'\t' read -r engine allocated_storage version multi_az <<< "$(get_db_info "$instance_id")"
-    IFS=$'\t' read -r engine multi_az read_replica_source allocated_storage version storage_type <<< "$(get_db_info "$instance_id")"
+    # Get DB info (engine, multi-AZ, storage, version, read replica source, cluster ID)
+    IFS=$'\t' read -r cluster_id engine multi_az read_replica_source allocated_storage version storage_type <<< "$(get_db_info "$instance_id")"
     
-    # Determine if this is a read replica and set the primary instance name
-    if [ -z "$read_replica_source" ] || [ "$read_replica_source" == "None" ]; then
-        rr_primary="None"
-        is_read_replica="No"
+    # Determine Multi-AZ status and type
+    if [[ "$engine" == "aurora-mysql" || "$engine" == "aurora-postgresql" ]]; then
+        # Always set to False and None for Aurora engines
+        multi_az="false"
+        multi_az_status="None"
+    elif [ "$cluster_id" != "None" ] && [ -n "$cluster_id" ]; then
+        cluster_multi_az=$(get_cluster_multi_az "$cluster_id")
+        if [ "$cluster_multi_az" == "true" ]; then
+            multi_az="true"
+            multi_az_status="Cluster"
+        elif [[ "$multi_az" == "true" || "$multi_az" == "True" ]]; then
+            multi_az_status="Database"
+        else
+            multi_az_status="None"
+        fi
+    elif [[ "$multi_az" == "true" || "$multi_az" == "True" ]]; then
+        multi_az_status="Database"
     else
-        rr_primary="$read_replica_source"
-        is_read_replica="Yes"
+        multi_az_status="None"
     fi
     
     # Get Aurora role if applicable
     aurora_role=$(get_aurora_role "$instance_id" "$engine")
+    
+    # Get instance tags
+    instance_tags=$(get_instance_tags "$instance_id")
+    
+    # Determine if this is a read replica and set the primary instance name
+    if [ -z "$read_replica_source" ] || [ "$read_replica_source" == "None" ]; then
+        # Check if this is an Aurora Reader instance
+        if [[ "$aurora_role" == "Reader" ]]; then
+            is_read_replica="Yes"
+            rr_primary=$(get_aurora_writer "$cluster_id")
+        else
+            is_read_replica="No"
+            rr_primary="None"
+        fi
+    else
+        rr_primary="$read_replica_source"
+        is_read_replica="Yes"
+    fi
 
     # Test serverless vcpu
     if [ "$vcpu_count" == "" ]; then
@@ -565,7 +674,7 @@ process_instance() {
             
             # Only print lines where timestamp is not empty
             if [ -n "$timestamp" ]; then
-                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" \
+                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
                         "$local_time" \
                     "$ACCOUNT_ID" \
     "$instance_id" \
@@ -574,6 +683,7 @@ process_instance() {
                     "$version" \
     "$storage_type" \
                     "$multi_az" \
+                    "$multi_az_status" \
                     "$is_read_replica" \
                     "$rr_primary" \
                     "$aurora_role" \
@@ -594,7 +704,8 @@ process_instance() {
                     "$write_avg" \
                     "$write_max" \
                     "$max_connections" \
-    "$SERVICE_TYPE" >> "$temp_file"
+    "$SERVICE_TYPE" \
+                    "\"$instance_tags\"" >> "$temp_file"
             fi
         done
     else
@@ -788,7 +899,7 @@ process_instance() {
             
             # Only print lines where timestamp is not empty
             if [ -n "$timestamp" ]; then
-                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n" \
+                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
                         "$local_time" \
                     "$ACCOUNT_ID" \
     "$instance_id" \
@@ -797,6 +908,7 @@ process_instance() {
                     "$version" \
     "$storage_type" \
                     "$multi_az" \
+                    "$multi_az_status" \
                     "$is_read_replica" \
                     "$rr_primary" \
                     "$aurora_role" \
@@ -817,7 +929,8 @@ process_instance() {
                     "$write_avg" \
                     "$write_max" \
                     "$max_connections" \
-    "$SERVICE_TYPE" >> "$temp_file"
+    "$SERVICE_TYPE" \
+                    "\"$instance_tags\"" >> "$temp_file"
             fi
         done
     fi
@@ -845,8 +958,9 @@ while read -r instance_id instance_class; do
 done <<< "$instances"
 
 # Sort and display the results
-#sort -k1,1 -k10,10 "$temp_file"
-head -1 "$temp_file"; tail -n +2 "$temp_file" | sort -k1,1 -k10,10
+if [ "$SILENT_MODE" = false ]; then
+    head -1 "$temp_file"; tail -n +2 "$temp_file" | sort -k1,1 -k10,10
+fi
 
 # Create output directory if it doesn't exist
 output_dir="./rds_reports"
@@ -861,7 +975,7 @@ fi
 
 # Create CSV version
 csv_file="$output_dir/rds_metrics_$(date +%Y%m%d_%H%M%S).csv"
-Header="Timestamp,AccountID,Instance Name,RDS Class,Engine,Storage Type,Version,Multi-AZ,Read Replica,RR Primary,Aurora Role,vCPUs,ACUs,Memory(GiB),Storage(GB),Free Storage(GB),Used Storage(GB),CPU Avg%,CPU Max%,Avg vCPU Used,Peak vCPU Used,Memory Free(GiB),Memory Used%,Read IOPS Avg,Read IOPS Max,Write IOPS Avg,Write IOPS Max,Max Connections,Service Type"
+Header="Timestamp,AccountID,Instance Name,RDS Class,Engine,Storage Type,Version,Multi-AZ Status,Multi-AZ Type,Read Replica,RR Primary,Aurora Role,vCPUs,ACUs,Memory(GiB),Storage(GB),Free Storage(GB),Used Storage(GB),CPU Avg%,CPU Max%,Avg vCPU Used,Peak vCPU Used,Memory Free(GiB),Memory Used%,Read IOPS Avg,Read IOPS Max,Write IOPS Avg,Write IOPS Max,Max Connections,Service Type,Tags"
 sed -i '1d' "$temp_file"
 sort -k1,1 -k2,2 "$temp_file" | sed 's/ \+/,/g' | sed 's/,$//g' >> "$csv_file"
 temp_file2="${2:-${csv_file}.tmp}"
@@ -878,15 +992,36 @@ rm "$temp_file"
 # Generate a dedicated CSV file with RDS instances list
 output_file="$output_dir/rds_instances_list_$(date +%Y%m%d_%H%M%S).csv"
 echo "Generating RDS instances list..."
-echo "Instance Name,Engine,Engine Version,Instance Class,Storage (GB),Multi-AZ,Read Replica,Read Replica Primary,Aurora Role" > "$output_file"
+echo "Instance Name,Engine,Engine Version,Instance Class,Storage (GB),Multi-AZ Status,Multi-AZ Type,Read Replica,Read Replica Primary,Aurora Role,Tags" > "$output_file"
 
 if [ -n "$ENGINE_TYPE" ]; then
     instances_data=$(aws rds describe-db-instances --filters Name=engine,Values="$ENGINE_TYPE" \
-        --query 'DBInstances[*].[DBInstanceIdentifier,Engine,EngineVersion,DBInstanceClass,AllocatedStorage,MultiAZ,ReadReplicaDBInstanceIdentifiers,ReadReplicaSourceDBInstanceIdentifier || `None`]' \
+        --query 'DBInstances[*].[DBInstanceIdentifier,Engine,EngineVersion,DBInstanceClass,AllocatedStorage,MultiAZ,ReadReplicaDBInstanceIdentifiers,ReadReplicaSourceDBInstanceIdentifier || `None`,DBClusterIdentifier]' \
         --output text)
     
     # Process each instance to add Aurora role
-    while IFS=$'\t' read -r instance_id engine version class storage multi_az replicas source; do
+    while IFS=$'\t' read -r instance_id engine version class storage multi_az replicas source cluster_id; do
+        # Determine Multi-AZ status and type
+        if [[ "$engine" == "aurora-mysql" || "$engine" == "aurora-postgresql" ]]; then
+            # Always set to False and None for Aurora engines
+            multi_az="false"
+            multi_az_status="None"
+        elif [ "$cluster_id" != "None" ] && [ -n "$cluster_id" ]; then
+            cluster_multi_az=$(get_cluster_multi_az "$cluster_id")
+            if [ "$cluster_multi_az" == "true" ]; then
+                multi_az="true"
+                multi_az_status="Cluster"
+            elif [[ "$multi_az" == "true" || "$multi_az" == "True" ]]; then
+                multi_az_status="Database"
+            else
+                multi_az_status="None"
+            fi
+        elif [[ "$multi_az" == "true" || "$multi_az" == "True" ]]; then
+            multi_az_status="Database"
+        else
+            multi_az_status="None"
+        fi
+        
         # Get Aurora role if applicable
         if [[ "$engine" == "aurora-mysql" || "$engine" == "aurora-postgresql" ]]; then
             aurora_role=$(get_aurora_role "$instance_id" "$engine")
@@ -894,16 +1029,52 @@ if [ -n "$ENGINE_TYPE" ]; then
             aurora_role=""
         fi
         
+        # Get instance tags
+        instance_tags=$(get_instance_tags "$instance_id")
+        
+        # Determine read replica status and primary (traditional RDS read replica or Aurora Reader)
+        if [ -n "$replicas" ] && [ "$replicas" != "None" ]; then
+            read_replica_status="Yes"
+            rr_primary="$source"
+        elif [[ "$aurora_role" == "Reader" ]]; then
+            read_replica_status="Yes"
+            rr_primary=$(get_aurora_writer "$cluster_id")
+        else
+            read_replica_status="No"
+            rr_primary="$source"
+        fi
+        
         # Format the output line
-        echo "$instance_id,$engine,$version,$class,$storage,$([ "$multi_az" == "true" ] && echo "Yes" || echo "No"),$([ -n "$replicas" ] && [ "$replicas" != "None" ] && echo "Yes" || echo "No"),$source,$aurora_role" >> "$output_file"
+        echo "$instance_id,$engine,$version,$class,$storage,$([ "$multi_az" == "True" ] && echo "Yes" || echo "No"),$multi_az_status,$read_replica_status,$rr_primary,${aurora_role:-None},\"$instance_tags\"" >> "$output_file"
     done <<< "$instances_data"
 else
     instances_data=$(aws rds describe-db-instances \
-        --query 'DBInstances[*].[DBInstanceIdentifier,Engine,EngineVersion,DBInstanceClass,AllocatedStorage,MultiAZ,ReadReplicaDBInstanceIdentifiers,ReadReplicaSourceDBInstanceIdentifier || `None`]' \
+        --query 'DBInstances[*].[DBInstanceIdentifier,Engine,EngineVersion,DBInstanceClass,AllocatedStorage,MultiAZ,ReadReplicaDBInstanceIdentifiers,ReadReplicaSourceDBInstanceIdentifier || `None`,DBClusterIdentifier]' \
         --output text)
     
     # Process each instance to add Aurora role
-    while IFS=$'\t' read -r instance_id engine version class storage multi_az replicas source; do
+    while IFS=$'\t' read -r instance_id engine version class storage multi_az replicas source cluster_id; do
+        # Determine Multi-AZ status and type
+        if [[ "$engine" == "aurora-mysql" || "$engine" == "aurora-postgresql" ]]; then
+            # Always set to False and None for Aurora engines
+            multi_az="false"
+            multi_az_status="None"
+        elif [ "$cluster_id" != "None" ] && [ -n "$cluster_id" ]; then
+            cluster_multi_az=$(get_cluster_multi_az "$cluster_id")
+            if [ "$cluster_multi_az" == "true" ]; then
+                multi_az="true"
+                multi_az_status="Cluster"
+            elif [[ "$multi_az" == "true" || "$multi_az" == "True" ]]; then
+                multi_az_status="Database"
+            else
+                multi_az_status="None"
+            fi
+        elif [[ "$multi_az" == "true" || "$multi_az" == "True" ]]; then
+            multi_az_status="Database"
+        else
+            multi_az_status="None"
+        fi
+        
         # Get Aurora role if applicable
         if [[ "$engine" == "aurora-mysql" || "$engine" == "aurora-postgresql" ]]; then
             aurora_role=$(get_aurora_role "$instance_id" "$engine")
@@ -911,8 +1082,23 @@ else
             aurora_role=""
         fi
         
+        # Get instance tags
+        instance_tags=$(get_instance_tags "$instance_id")
+        
+        # Determine read replica status and primary (traditional RDS read replica or Aurora Reader)
+        if [ -n "$replicas" ] && [ "$replicas" != "None" ]; then
+            read_replica_status="Yes"
+            rr_primary="$source"
+        elif [[ "$aurora_role" == "Reader" ]]; then
+            read_replica_status="Yes"
+            rr_primary=$(get_aurora_writer "$cluster_id")
+        else
+            read_replica_status="No"
+            rr_primary="$source"
+        fi
+        
         # Format the output line
-        echo "$instance_id,$engine,$version,$class,$storage,$([ "$multi_az" == "true" ] && echo "Yes" || echo "No"),$([ -n "$replicas" ] && [ "$replicas" != "None" ] && echo "Yes" || echo "No"),$source,$aurora_role" >> "$output_file"
+        echo "$instance_id,$engine,$version,$class,$storage,$([ "$multi_az" == "True" ] && echo "Yes" || echo "No"),$multi_az_status,$read_replica_status,$rr_primary,${aurora_role:-None},\"$instance_tags\"" >> "$output_file"
     done <<< "$instances_data"
 fi
 

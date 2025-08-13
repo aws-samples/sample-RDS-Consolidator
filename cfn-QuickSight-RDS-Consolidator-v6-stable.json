@@ -1,0 +1,3654 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Complete CloudFormation template for RDS Consolidator QuickSight Dataset and Analysis with all visuals",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "Stack Configuration"
+          },
+          "Parameters": [
+            "StackName"
+          ]
+        },
+        {
+          "Label": {
+            "default": "S3 Configuration"
+          },
+          "Parameters": [
+            "S3BucketName",
+            "ManifestKey"
+          ]
+        },
+        {
+          "Label": {
+            "default": "QuickSight Configuration"
+          },
+          "Parameters": [
+            "DatasetName",
+            "DataSourceName",
+            "AnalysisName",
+            "DashboardName",
+            "QuickSightUserName"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "StackName": {
+          "default": "Stack Name"
+        }
+      }
+    },
+    "StackName": "rds-consolidator-dataset-v16a-00"
+  },
+  "Parameters": {
+    "StackName": {
+      "Type": "String",
+      "Description": "Name of the CloudFormation stack",
+      "Default": "rds-consolidator-dataset-v16a-00"
+    },
+    "S3BucketName": {
+      "Type": "String",
+      "Description": "The S3 bucket where the CSV file is stored",
+      "Default": "rds-consolidator"
+    },
+    "ManifestKey": {
+      "Type": "String",
+      "Description": "The S3 key for the manifest file",
+      "Default": "rds-consolidator-manifest-v1.json"
+    },
+    "DatasetName": {
+      "Type": "String",
+      "Description": "Name for the QuickSight dataset",
+      "Default": "RDS-Consolidator-V16a-Dataset"
+    },
+    "DataSourceName": {
+      "Type": "String",
+      "Description": "Name for the QuickSight data source",
+      "Default": "RDS-Consolidator-V16a-S3-DataSource"
+    },
+    "AnalysisName": {
+      "Type": "String",
+      "Description": "RDS Consolidation V16a Analysis",
+      "Default": "RDS-Consolidator-V16a-Analysis"
+    },
+    "DashboardName": {
+      "Type": "String",
+      "Description": "RDS Consolidation V16a Dashboard",
+      "Default": "RDS-Consolidator-V16a-Dashboard"
+    },
+    "QuickSightUserName": {
+      "Type": "String",
+      "Description": "QuickSight username (e.g., Group/Username)",
+      "Default": "Group/Username"
+    }
+  },
+  "Resources": {
+    "QuickSightS3DataSource": {
+      "Type": "AWS::QuickSight::DataSource",
+      "Properties": {
+        "AwsAccountId": {
+          "Ref": "AWS::AccountId"
+        },
+        "DataSourceId": {
+          "Fn::Sub": "${StackName}-datasource"
+        },
+        "Name": {
+          "Ref": "DataSourceName"
+        },
+        "Type": "S3",
+        "DataSourceParameters": {
+          "S3Parameters": {
+            "ManifestFileLocation": {
+              "Bucket": {
+                "Ref": "S3BucketName"
+              },
+              "Key": {
+                "Ref": "ManifestKey"
+              }
+            }
+          }
+        },
+        "SslProperties": {
+          "DisableSsl": false
+        },
+        "Permissions": [
+          {
+            "Principal": {
+              "Fn::Sub": "arn:aws:quicksight:${AWS::Region}:${AWS::AccountId}:user/default/${QuickSightUserName}"
+            },
+            "Actions": [
+              "quicksight:DescribeDataSource",
+              "quicksight:DescribeDataSourcePermissions",
+              "quicksight:PassDataSource",
+              "quicksight:UpdateDataSource",
+              "quicksight:DeleteDataSource",
+              "quicksight:UpdateDataSourcePermissions"
+            ]
+          }
+        ]
+      }
+    },
+    "CFNRDSConsolidatorV16aQuickSightDataSet": {
+      "Type": "AWS::QuickSight::DataSet",
+      "DependsOn": "QuickSightS3DataSource",
+      "Properties": {
+        "AwsAccountId": {
+          "Ref": "AWS::AccountId"
+        },
+        "DataSetId": {
+          "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+        },
+        "Name": {
+          "Ref": "DatasetName"
+        },
+        "ImportMode": "SPICE",
+        "PhysicalTableMap": {
+          "YourTableName": {
+            "S3Source": {
+              "DataSourceArn": {
+                "Fn::Sub": "arn:aws:quicksight:${AWS::Region}:${AWS::AccountId}:datasource/${StackName}-datasource"
+              },
+              "InputColumns": [
+                {
+                  "Name": "Timestamp",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "AccountID",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Instance Name",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "RDS Class",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Engine",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Storage Type",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Version",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Multi-AZ Status",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Multi-AZ Type",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Read Replica",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "RR Primary",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Aurora Role",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "vCPUs",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "ACUs",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Memory(GiB)",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Storage(GB)",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Free Storage(GB)",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Used Storage(GB)",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "CPU Avg%",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "CPU Max%",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Avg vCPU Used",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Peak vCPU Used",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Memory Free(GiB)",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Memory Used%",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Read IOPS Avg",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Read IOPS Max",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Write IOPS Avg",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Write IOPS Max",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Max Connections",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Service Type",
+                  "Type": "STRING"
+                },
+                {
+                  "Name": "Tags",
+                  "Type": "STRING"
+                }
+              ],
+              "UploadSettings": {
+                "Format": "CSV",
+                "StartFromRow": 1,
+                "ContainsHeader": true,
+                "TextQualifier": "DOUBLE_QUOTE"
+              }
+            }
+          }
+        },
+        "LogicalTableMap": {
+          "LogicalTable1": {
+            "Alias": "YourLogicalTableAlias",
+            "Source": {
+              "PhysicalTableId": "YourTableName"
+            },
+            "DataTransforms": [
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Timestamp",
+                  "NewColumnType": "DATETIME",
+                  "Format": "yyyy-MM-dd HH:mm"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "vCPUs",
+                  "NewColumnType": "INTEGER"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "ACUs",
+                  "NewColumnType": "INTEGER"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Memory(GiB)",
+                  "NewColumnType": "INTEGER"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Storage(GB)",
+                  "NewColumnType": "INTEGER"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Free Storage(GB)",
+                  "NewColumnType": "DECIMAL"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Used Storage(GB)",
+                  "NewColumnType": "DECIMAL"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "CPU Avg%",
+                  "NewColumnType": "DECIMAL"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "CPU Max%",
+                  "NewColumnType": "DECIMAL"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Avg vCPU Used",
+                  "NewColumnType": "DECIMAL"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Peak vCPU Used",
+                  "NewColumnType": "DECIMAL"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Memory Free(GiB)",
+                  "NewColumnType": "DECIMAL"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Memory Used%",
+                  "NewColumnType": "INTEGER"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Read IOPS Avg",
+                  "NewColumnType": "DECIMAL"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Read IOPS Max",
+                  "NewColumnType": "DECIMAL"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Write IOPS Avg",
+                  "NewColumnType": "INTEGER"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Write IOPS Max",
+                  "NewColumnType": "INTEGER"
+                }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "Max Connections",
+                  "NewColumnType": "INTEGER"
+                }
+              }
+            ]
+          }
+        },
+        "Permissions": [
+          {
+            "Principal": {
+              "Fn::Sub": "arn:aws:quicksight:${AWS::Region}:${AWS::AccountId}:user/default/${QuickSightUserName}"
+            },
+            "Actions": [
+              "quicksight:DescribeDataSet",
+              "quicksight:DescribeDataSetPermissions",
+              "quicksight:PassDataSet",
+              "quicksight:DescribeIngestion",
+              "quicksight:ListIngestions"
+            ]
+          }
+        ]
+      }
+    },
+    "RDSMetricsAnalysis": {
+      "Type": "AWS::QuickSight::Analysis",
+      "Properties": {
+        "AnalysisId": {
+          "Ref": "AnalysisName"
+        },
+        "Name": {
+          "Ref": "AnalysisName"
+        },
+        "AwsAccountId": {
+          "Fn::Sub": "${AWS::AccountId}"
+        },
+        "Permissions": [
+          {
+            "Principal": {
+              "Fn::Sub": "arn:aws:quicksight:${AWS::Region}:${AWS::AccountId}:user/default/${QuickSightUserName}"
+            },
+            "Actions": [
+              "quicksight:RestoreAnalysis",
+              "quicksight:UpdateAnalysisPermissions",
+              "quicksight:DeleteAnalysis",
+              "quicksight:QueryAnalysis",
+              "quicksight:DescribeAnalysisPermissions",
+              "quicksight:DescribeAnalysis",
+              "quicksight:UpdateAnalysis"
+            ]
+          }
+        ],
+        "Definition": {
+          "AnalysisDefaults": {
+            "DefaultNewSheetConfiguration": {
+              "InteractiveLayoutConfiguration": {
+                "Grid": {
+                  "CanvasSizeOptions": {
+                    "ScreenCanvasSizeOptions": {
+                      "OptimizedViewPortWidth": "1600px",
+                      "ResizeOption": "FIXED"
+                    }
+                  }
+                }
+              },
+              "SheetContentType": "INTERACTIVE"
+            }
+          },
+          "CalculatedFields": [],
+          "DataSetIdentifierDeclarations": [
+            {
+              "DataSetArn": {
+                "Fn::GetAtt": [
+                  "CFNRDSConsolidatorV16aQuickSightDataSet",
+                  "Arn"
+                ]
+              },
+              "Identifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              }
+            }
+          ],
+          "FilterGroups": [
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "df247b46-2571-4dbc-973d-34a3226b528b",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Instance Name",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "0459c7df-4163-4ac7-8f7c-959c7a4a440a"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "039f4609-925f-4d95-9b44-cc7f3ee60a14",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Engine",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "1bf3e63a-7551-4f22-9550-5319fe566076"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "9a9076e1-99bf-4e37-ac6f-6ae88502e716",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "RDS Class",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "7e06ab07-2544-464c-9a61-01b7a6711001"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "213b93fb-5cc1-4163-ae35-bbfded9f31e8",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Multi-AZ Status",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "3d0ced6e-d5b4-49a2-95c9-79c163e5551d"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "multi-az-type-filter-group",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Multi-AZ Type",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "multi-az-type-filter-id"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "93a01564-31a1-449d-bf38-9ade6ce0b71b",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Read Replica",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "002f8575-2c4f-4788-9608-989793d2a877"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "88d3bfc2-777e-43fe-96e5-b6ffd366d8b2",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Storage Type",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "7d97435d-2aa7-4b0b-b17b-cb26a0d26657"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "9a9fbf8b-9df7-4b47-8d4f-a9e6bb65955d",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Version",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "9cf8a4a3-d657-4a3d-8e83-b7931d1966eb"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            }
+          ],
+          "Options": {
+            "ExcludedDataSetArns": [],
+            "QBusinessInsightsStatus": "DISABLED",
+            "WeekStart": "SUNDAY"
+          },
+          "ParameterDeclarations": [],
+          "QueryExecutionOptions": {
+            "QueryExecutionMode": "AUTO"
+          },
+          "Sheets": [
+            {
+              "ContentType": "INTERACTIVE",
+              "FilterControls": [
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "4f47a749-2ee4-433a-b293-75e47a6ec1d0",
+                    "SourceFilterId": "0459c7df-4163-4ac7-8f7c-959c7a4a440a",
+                    "Title": "Instance Name equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "6a117991-88df-4d97-afc5-e67fe758715a",
+                    "SourceFilterId": "1bf3e63a-7551-4f22-9550-5319fe566076",
+                    "Title": "Engine equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "5ef284f4-c210-40f4-9801-295dc8020585",
+                    "SourceFilterId": "7e06ab07-2544-464c-9a61-01b7a6711001",
+                    "Title": "RDS Class equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "638b7468-95bc-4fbc-91e4-2c5fd6057eb1",
+                    "SourceFilterId": "3d0ced6e-d5b4-49a2-95c9-79c163e5551d",
+                    "Title": "Multi-AZ Status equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "multi-az-type-control-id",
+                    "SourceFilterId": "multi-az-type-filter-id",
+                    "Title": "Multi-AZ Type equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "3b090f76-c7f8-4e2d-8b01-5affa8eed727",
+                    "SourceFilterId": "002f8575-2c4f-4788-9608-989793d2a877",
+                    "Title": "Read Replica equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "b1324370-7683-484f-a84c-c1d31c107139",
+                    "SourceFilterId": "7d97435d-2aa7-4b0b-b17b-cb26a0d26657",
+                    "Title": "Storage Type equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "b1dc3aee-f248-41d6-933c-7c73e301bd9a",
+                    "SourceFilterId": "9cf8a4a3-d657-4a3d-8e83-b7931d1966eb",
+                    "Title": "Version equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                }
+              ],
+              "Layouts": [
+                {
+                  "Configuration": {
+                    "GridLayout": {
+                      "CanvasSizeOptions": {
+                        "ScreenCanvasSizeOptions": {
+                          "OptimizedViewPortWidth": "1600px",
+                          "ResizeOption": "FIXED"
+                        }
+                      },
+                      "Elements": [
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "017571eb-a3a7-4f81-8e7f-bee380fe36f4",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 0,
+                          "RowSpan": 3
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "db5133e3-254e-4cb7-89c0-72c8c60235c0",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 3,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "0daa433e-515b-4a37-8153-46f6b7f21a63",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 15,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "acu-usage-analysis-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 27,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "ca694cce-6b86-4e4d-a3fa-14b50d59b59e",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 39,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "040a2996-18a8-478f-b6c2-73b3fc4516c7",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 51,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 18,
+                          "ElementId": "c01fe792-e699-486c-acb8-e792fb3999d1",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 63,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 18,
+                          "ColumnSpan": 18,
+                          "ElementId": "7639823c-d17b-4be7-9336-e0854063be0a",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 63,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "a1dd1b21-7bbf-402b-bdae-bf0b114907be",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 75,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 23,
+                          "ElementId": "77015324-251c-4514-8d27-c86d995c2cc1",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 87,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "max-connections-analysis-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 99,
+                          "RowSpan": 12
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "Name": "RDS Conso Main",
+              "SheetControlLayouts": [
+                {
+                  "Configuration": {
+                    "GridLayout": {
+                      "Elements": [
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 2,
+                          "ElementId": "4f47a749-2ee4-433a-b293-75e47a6ec1d0",
+                          "ElementType": "FILTER_CONTROL",
+                          "RowIndex": 0,
+                          "RowSpan": 1
+                        },
+                        {
+                          "ColumnIndex": 2,
+                          "ColumnSpan": 2,
+                          "ElementId": "6a117991-88df-4d97-afc5-e67fe758715a",
+                          "ElementType": "FILTER_CONTROL",
+                          "RowIndex": 0,
+                          "RowSpan": 1
+                        },
+                        {
+                          "ColumnIndex": 4,
+                          "ColumnSpan": 2,
+                          "ElementId": "5ef284f4-c210-40f4-9801-295dc8020585",
+                          "ElementType": "FILTER_CONTROL",
+                          "RowIndex": 0,
+                          "RowSpan": 1
+                        },
+                        {
+                          "ColumnIndex": 6,
+                          "ColumnSpan": 2,
+                          "ElementId": "b1dc3aee-f248-41d6-933c-7c73e301bd9a",
+                          "ElementType": "FILTER_CONTROL",
+                          "RowIndex": 0,
+                          "RowSpan": 1
+                        },
+                        {
+                          "ColumnIndex": 8,
+                          "ColumnSpan": 2,
+                          "ElementId": "638b7468-95bc-4fbc-91e4-2c5fd6057eb1",
+                          "ElementType": "FILTER_CONTROL",
+                          "RowIndex": 0,
+                          "RowSpan": 1
+                        },
+                        {
+                          "ColumnIndex": 10,
+                          "ColumnSpan": 2,
+                          "ElementId": "multi-az-type-control-id",
+                          "ElementType": "FILTER_CONTROL",
+                          "RowIndex": 0,
+                          "RowSpan": 1
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 2,
+                          "ElementId": "3b090f76-c7f8-4e2d-8b01-5affa8eed727",
+                          "ElementType": "FILTER_CONTROL",
+                          "RowIndex": 1,
+                          "RowSpan": 1
+                        },
+                        {
+                          "ColumnIndex": 2,
+                          "ColumnSpan": 2,
+                          "ElementId": "b1324370-7683-484f-a84c-c1d31c107139",
+                          "ElementType": "FILTER_CONTROL",
+                          "RowIndex": 1,
+                          "RowSpan": 1
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8",
+              "TextBoxes": [
+                {
+                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"48px\">Amazon RDS Consolidator</inline>\n  </block>\n  <br/>\n  <block align=\"center\">\n    <inline font-size=\"16px\">Version 16a - 08/12/2025</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "017571eb-a3a7-4f81-8e7f-bee380fe36f4"
+                }
+              ],
+              "Visuals": [
+                {
+                  "LineChartVisual": {
+                    "Actions": [],
+                    "ChartConfiguration": {
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "HIDDEN"
+                      },
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619832",
+                                "HierarchyId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619832"
+                              }
+                            }
+                          ],
+                          "Colors": [],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Avg vCPU Used",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Avg vCPU Used.1.1750235632740"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Peak vCPU Used",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Peak vCPU Used.2.1750235643018"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "vCPUs",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.vCPUs.3.1750235646609"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "SortConfiguration": {
+                        "CategoryItemsLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "CategorySort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "DESC",
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619832"
+                            }
+                          }
+                        ],
+                        "ColorItemsLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "SmallMultiplesLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        }
+                      },
+                      "Tooltip": {
+                        "FieldBasedTooltip": {
+                          "AggregationVisibility": "HIDDEN",
+                          "TooltipFields": [
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619832",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Avg vCPU Used.1.1750235632740",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Peak vCPU Used.2.1750235643018",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.vCPUs.3.1750235646609",
+                                "Visibility": "VISIBLE"
+                              }
+                            }
+                          ],
+                          "TooltipTitleType": "PRIMARY_VALUE"
+                        },
+                        "SelectedTooltipType": "DETAILED",
+                        "TooltipVisibility": "VISIBLE"
+                      },
+                      "Type": "LINE",
+                      "XAxisLabelOptions": {
+                        "AxisLabelOptions": [
+                          {
+                            "ApplyTo": {
+                              "Column": {
+                                "ColumnName": "Timestamp",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619832"
+                            },
+                            "CustomLabel": "Date"
+                          }
+                        ]
+                      }
+                    },
+                    "ColumnHierarchies": [
+                      {
+                        "DateTimeHierarchy": {
+                          "HierarchyId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619832"
+                        }
+                      }
+                    ],
+                    "Subtitle": {
+                      "Visibility": "VISIBLE"
+                    },
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>vCPU activity</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "VisualId": "0daa433e-515b-4a37-8153-46f6b7f21a63"
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "Actions": [],
+                    "ChartConfiguration": {
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "HIDDEN"
+                      },
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619834",
+                                "HierarchyId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619834"
+                              }
+                            }
+                          ],
+                          "Colors": [],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "ACUs",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs.1.1750235646611"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "SortConfiguration": {
+                        "CategoryItemsLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "CategorySort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "DESC",
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619834"
+                            }
+                          }
+                        ],
+                        "ColorItemsLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "SmallMultiplesLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        }
+                      },
+                      "Tooltip": {
+                        "FieldBasedTooltip": {
+                          "AggregationVisibility": "HIDDEN",
+                          "TooltipFields": [
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619834",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs.1.1750235646611",
+                                "Visibility": "VISIBLE"
+                              }
+                            }
+                          ],
+                          "TooltipTitleType": "PRIMARY_VALUE"
+                        },
+                        "SelectedTooltipType": "DETAILED",
+                        "TooltipVisibility": "VISIBLE"
+                      },
+                      "Type": "LINE",
+                      "XAxisLabelOptions": {
+                        "AxisLabelOptions": [
+                          {
+                            "ApplyTo": {
+                              "Column": {
+                                "ColumnName": "Timestamp",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619834"
+                            },
+                            "CustomLabel": "Date"
+                          }
+                        ]
+                      }
+                    },
+                    "ColumnHierarchies": [
+                      {
+                        "DateTimeHierarchy": {
+                          "HierarchyId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619834"
+                        }
+                      }
+                    ],
+                    "Subtitle": {
+                      "Visibility": "VISIBLE"
+                    },
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>ACUs usage</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "VisualId": "acu-usage-analysis-visual-id"
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "Actions": [],
+                    "ChartConfiguration": {
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "HIDDEN"
+                      },
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235752983",
+                                "HierarchyId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235752983"
+                              }
+                            }
+                          ],
+                          "Colors": [],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Read IOPS Avg",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Read IOPS Avg.1.1750235758692"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Read IOPS Max",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Read IOPS Max.2.1750235761998"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Write IOPS Avg",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Write IOPS Avg.3.1750235765361"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Write IOPS Max",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Write IOPS Max.4.1750235767906"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "SortConfiguration": {
+                        "CategoryItemsLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "CategorySort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "DESC",
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235752983"
+                            }
+                          }
+                        ],
+                        "ColorItemsLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "SmallMultiplesLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        }
+                      },
+                      "Tooltip": {
+                        "FieldBasedTooltip": {
+                          "AggregationVisibility": "HIDDEN",
+                          "TooltipFields": [
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235752983",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Read IOPS Avg.1.1750235758692",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Read IOPS Max.2.1750235761998",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Write IOPS Avg.3.1750235765361",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Write IOPS Max.4.1750235767906",
+                                "Visibility": "VISIBLE"
+                              }
+                            }
+                          ],
+                          "TooltipTitleType": "PRIMARY_VALUE"
+                        },
+                        "SelectedTooltipType": "DETAILED",
+                        "TooltipVisibility": "VISIBLE"
+                      },
+                      "Type": "LINE",
+                      "XAxisLabelOptions": {
+                        "AxisLabelOptions": [
+                          {
+                            "ApplyTo": {
+                              "Column": {
+                                "ColumnName": "Timestamp",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235752983"
+                            },
+                            "CustomLabel": "date"
+                          }
+                        ]
+                      }
+                    },
+                    "ColumnHierarchies": [
+                      {
+                        "DateTimeHierarchy": {
+                          "HierarchyId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235752983"
+                        }
+                      }
+                    ],
+                    "Subtitle": {
+                      "Visibility": "VISIBLE"
+                    },
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>\n  IOPS Activity (read/write, average and peak)\n  <br/>\n</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "VisualId": "ca694cce-6b86-4e4d-a3fa-14b50d59b59e"
+                  }
+                },
+                {
+                  "TableVisual": {
+                    "Actions": [],
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "TableAggregatedFieldWells": {
+                          "GroupBy": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "AccountID",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.AccountID.3.1750235858713"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.0.1750235842170"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Engine",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Engine.1.1750235849416"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Version",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Version.2.1750235853611"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "RDS Class",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.RDS Class.4.1750235867654"
+                              }
+                            },
+                            {
+                              "NumericalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "vCPUs",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.vCPUs.9.1750235907414"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Multi-AZ Status",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Multi-AZ Status.5.1750235877005"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Multi-AZ Type",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Multi-AZ Type.5a.1750235877006"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Read Replica",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Read Replica.6.1750235880610"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "RR Primary",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.RR Primary.7.1750235883193"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Storage Type",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Storage Type.8.1750235885556"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Tags",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Tags.11.1750235933837"
+                              }
+                            }
+                          ],
+                          "Values": []
+                        }
+                      },
+                      "SortConfiguration": {}
+                    },
+                    "Subtitle": {
+                      "Visibility": "VISIBLE"
+                    },
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Instances overview</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "VisualId": "db5133e3-254e-4cb7-89c0-72c8c60235c0"
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "Actions": [],
+                    "ChartConfiguration": {
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "HIDDEN"
+                      },
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235993579",
+                                "HierarchyId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235993579"
+                              }
+                            }
+                          ],
+                          "Colors": [],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Storage(GB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Storage(GB).1.1750235999483"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Used Storage(GB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Used Storage(GB).2.1750236002877"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Free Storage(GB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Free Storage(GB).3.1750236015103"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "SortConfiguration": {
+                        "CategoryItemsLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "CategorySort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "DESC",
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235993579"
+                            }
+                          }
+                        ],
+                        "ColorItemsLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "SmallMultiplesLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        }
+                      },
+                      "Tooltip": {
+                        "FieldBasedTooltip": {
+                          "AggregationVisibility": "HIDDEN",
+                          "TooltipFields": [
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235993579",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Storage(GB).1.1750235999483",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Used Storage(GB).2.1750236002877",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Free Storage(GB).3.1750236015103",
+                                "Visibility": "VISIBLE"
+                              }
+                            }
+                          ],
+                          "TooltipTitleType": "PRIMARY_VALUE"
+                        },
+                        "SelectedTooltipType": "DETAILED",
+                        "TooltipVisibility": "VISIBLE"
+                      },
+                      "Type": "LINE",
+                      "XAxisLabelOptions": {
+                        "AxisLabelOptions": [
+                          {
+                            "ApplyTo": {
+                              "Column": {
+                                "ColumnName": "Timestamp",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235993579"
+                            },
+                            "CustomLabel": "Date"
+                          }
+                        ]
+                      }
+                    },
+                    "ColumnHierarchies": [
+                      {
+                        "DateTimeHierarchy": {
+                          "HierarchyId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235993579"
+                        }
+                      }
+                    ],
+                    "Subtitle": {
+                      "Visibility": "VISIBLE"
+                    },
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Storage allocation and usage</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "VisualId": "040a2996-18a8-478f-b6c2-73b3fc4516c7"
+                  }
+                },
+                {
+                  "BarChartVisual": {
+                    "Actions": [],
+                    "ChartConfiguration": {
+                      "BarsArrangement": "STACKED",
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "HIDDEN"
+                      },
+                      "FieldWells": {
+                        "BarChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.2.1750236198398"
+                              }
+                            }
+                          ],
+                          "Colors": [],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "AVERAGE"
+                                },
+                                "Column": {
+                                  "ColumnName": "Used Storage(GB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Used Storage(GB).0.1750236170267"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "AVERAGE"
+                                },
+                                "Column": {
+                                  "ColumnName": "Free Storage(GB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Free Storage(GB).2.1750236181901"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "Orientation": "HORIZONTAL",
+                      "SortConfiguration": {
+                        "CategoryItemsLimit": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "CategorySort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "DESC",
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Used Storage(GB).0.1750236170267"
+                            }
+                          }
+                        ],
+                        "ColorItemsLimit": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "SmallMultiplesLimitConfiguration": {
+                          "OtherCategories": "INCLUDE"
+                        }
+                      },
+                      "Tooltip": {
+                        "FieldBasedTooltip": {
+                          "AggregationVisibility": "HIDDEN",
+                          "TooltipFields": [
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.2.1750236198398",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Used Storage(GB).0.1750236170267",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Free Storage(GB).2.1750236181901",
+                                "Visibility": "VISIBLE"
+                              }
+                            }
+                          ],
+                          "TooltipTitleType": "PRIMARY_VALUE"
+                        },
+                        "SelectedTooltipType": "DETAILED",
+                        "TooltipVisibility": "VISIBLE"
+                      }
+                    },
+                    "ColumnHierarchies": [],
+                    "Subtitle": {
+                      "Visibility": "VISIBLE"
+                    },
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Storage free+Used per instance (in GB)</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "VisualId": "c01fe792-e699-486c-acb8-e792fb3999d1"
+                  }
+                },
+                {
+                  "GaugeChartVisual": {
+                    "Actions": [],
+                    "ChartConfiguration": {
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "VISIBLE"
+                      },
+                      "FieldWells": {
+                        "TargetValues": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "AVERAGE"
+                              },
+                              "Column": {
+                                "ColumnName": "Memory(GiB)",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Memory(GiB).0.1750236285945"
+                            }
+                          }
+                        ],
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "AVERAGE"
+                              },
+                              "Column": {
+                                "ColumnName": "Memory Free(GiB)",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Memory Free(GiB).1.1750236294551"
+                            }
+                          }
+                        ]
+                      },
+                      "TooltipOptions": {
+                        "FieldBasedTooltip": {
+                          "AggregationVisibility": "HIDDEN",
+                          "TooltipFields": [
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Memory(GiB).0.1750236285945",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Memory Free(GiB).1.1750236294551",
+                                "Visibility": "VISIBLE"
+                              }
+                            }
+                          ],
+                          "TooltipTitleType": "PRIMARY_VALUE"
+                        },
+                        "SelectedTooltipType": "DETAILED",
+                        "TooltipVisibility": "VISIBLE"
+                      }
+                    },
+                    "Subtitle": {
+                      "Visibility": "VISIBLE"
+                    },
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Average Free memory vs. allocated</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "VisualId": "7639823c-d17b-4be7-9336-e0854063be0a"
+                  }
+                },
+                {
+                  "WaterfallVisual": {
+                    "Actions": [],
+                    "ChartConfiguration": {
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "VISIBLE"
+                      },
+                      "FieldWells": {
+                        "WaterfallChartAggregatedFieldWells": {
+                          "Breakdowns": [],
+                          "Categories": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Version",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Version.1.1750236434485"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "CategoricalMeasureField": {
+                                "AggregationFunction": "DISTINCT_COUNT",
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.0.1750236427484"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "PrimaryYAxisLabelOptions": {
+                        "AxisLabelOptions": [
+                          {
+                            "ApplyTo": {
+                              "Column": {
+                                "ColumnName": "Instance Name",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.0.1750236427484"
+                            },
+                            "CustomLabel": "Number of instances"
+                          }
+                        ]
+                      },
+                      "SortConfiguration": {
+                        "BreakdownItemsLimit": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "CategorySort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "DESC",
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Version.1.1750236434485"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "ColumnHierarchies": [],
+                    "Subtitle": {
+                      "Visibility": "VISIBLE"
+                    },
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Instance distribution per engine version</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "VisualId": "a1dd1b21-7bbf-402b-bdae-bf0b114907be"
+                  }
+                },
+                {
+                  "WaterfallVisual": {
+                    "Actions": [],
+                    "ChartConfiguration": {
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "VISIBLE"
+                      },
+                      "FieldWells": {
+                        "WaterfallChartAggregatedFieldWells": {
+                          "Breakdowns": [],
+                          "Categories": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Engine",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Engine.0.1750236526632"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "CategoricalMeasureField": {
+                                "AggregationFunction": "DISTINCT_COUNT",
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.1.1750236533378"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "PrimaryYAxisLabelOptions": {
+                        "AxisLabelOptions": [
+                          {
+                            "ApplyTo": {
+                              "Column": {
+                                "ColumnName": "Instance Name",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.1.1750236533378"
+                            },
+                            "CustomLabel": "Number of instances"
+                          }
+                        ]
+                      },
+                      "SortConfiguration": {
+                        "BreakdownItemsLimit": {
+                          "OtherCategories": "INCLUDE"
+                        },
+                        "CategorySort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "DESC",
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Engine.0.1750236526632"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "ColumnHierarchies": [],
+                    "Subtitle": {
+                      "Visibility": "VISIBLE"
+                    },
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Number of instances per engine</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "VisualId": "77015324-251c-4514-8d27-c86d995c2cc1"
+                  }
+                },
+                {
+                  "BarChartVisual": {
+                    "Actions": [],
+                    "ChartConfiguration": {
+                      "BarsArrangement": "STACKED",
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "HIDDEN"
+                      },
+                      "FieldWells": {
+                        "BarChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750236600002",
+                                "HierarchyId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750236600002"
+                              }
+                            }
+                          ],
+                          "Colors": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.2.1750236600004"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Max Connections",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Max Connections.1.1750236600003"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "Orientation": "VERTICAL",
+                      "SortConfiguration": {
+                        "CategoryItemsLimit": {
+                          "OtherCategories": "EXCLUDE"
+                        },
+                        "CategorySort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "ASC",
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750236600002"
+                            }
+                          }
+                        ],
+                        "ColorItemsLimit": {
+                          "OtherCategories": "EXCLUDE"
+                        },
+                        "SmallMultiplesLimitConfiguration": {
+                          "OtherCategories": "EXCLUDE"
+                        }
+                      },
+                      "Tooltip": {
+                        "FieldBasedTooltip": {
+                          "AggregationVisibility": "HIDDEN",
+                          "TooltipFields": [
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750236600002",
+                                "Visibility": "VISIBLE"
+                              }
+                            },
+                            {
+                              "FieldTooltipItem": {
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Max Connections.1.1750236600003",
+                                "Visibility": "VISIBLE"
+                              }
+                            }
+                          ],
+                          "TooltipTitleType": "PRIMARY_VALUE"
+                        },
+                        "SelectedTooltipType": "DETAILED",
+                        "TooltipVisibility": "VISIBLE"
+                      }
+                    },
+                    "ColumnHierarchies": [
+                      {
+                        "DateTimeHierarchy": {
+                          "HierarchyId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750236600002"
+                        }
+                      }
+                    ],
+                    "Subtitle": {
+                      "Visibility": "VISIBLE"
+                    },
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Max Connections</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "VisualId": "max-connections-analysis-visual-id"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "ValidationStrategy": {
+          "Mode": "LENIENT"
+        }
+      }
+    },
+    "RDSMetricsDashboard": {
+      "Type": "AWS::QuickSight::Dashboard",
+      "DependsOn": "RDSMetricsAnalysis",
+      "Properties": {
+        "DashboardId": {
+          "Fn::Sub": "${DashboardName}-${AWS::StackName}"
+        },
+        "Name": {
+          "Ref": "DashboardName"
+        },
+        "AwsAccountId": {
+          "Fn::Sub": "${AWS::AccountId}"
+        },
+        "Definition": {
+          "AnalysisDefaults": {
+            "DefaultNewSheetConfiguration": {
+              "InteractiveLayoutConfiguration": {
+                "Grid": {
+                  "CanvasSizeOptions": {
+                    "ScreenCanvasSizeOptions": {
+                      "OptimizedViewPortWidth": "1600px",
+                      "ResizeOption": "FIXED"
+                    }
+                  }
+                }
+              },
+              "SheetContentType": "INTERACTIVE"
+            }
+          },
+          "CalculatedFields": [],
+          "DataSetIdentifierDeclarations": [
+            {
+              "DataSetArn": {
+                "Fn::GetAtt": [
+                  "CFNRDSConsolidatorV16aQuickSightDataSet",
+                  "Arn"
+                ]
+              },
+              "Identifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              }
+            }
+          ],
+          "FilterGroups": [
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "df247b46-2571-4dbc-973d-34a3226b528b",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Instance Name",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "0459c7df-4163-4ac7-8f7c-959c7a4a440a"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "039f4609-925f-4d95-9b44-cc7f3ee60a14",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Engine",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "1bf3e63a-7551-4f22-9550-5319fe566076"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "9a9076e1-99bf-4e37-ac6f-6ae88502e716",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "RDS Class",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "7e06ab07-2544-464c-9a61-01b7a6711001"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "213b93fb-5cc1-4163-ae35-bbfded9f31e8",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Multi-AZ Status",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "3d0ced6e-d5b4-49a2-95c9-79c163e5551d"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "multi-az-type-dashboard-filter",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Multi-AZ Type",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "multi-az-type-dashboard-filter-id"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "93a01564-31a1-449d-bf38-9ade6ce0b71b",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Read Replica",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "002f8575-2c4f-4788-9608-989793d2a877"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "88d3bfc2-777e-43fe-96e5-b6ffd366d8b2",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Storage Type",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "7d97435d-2aa7-4b0b-b17b-cb26a0d26657"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            },
+            {
+              "CrossDataset": "SINGLE_DATASET",
+              "FilterGroupId": "9a9fbf8b-9df7-4b47-8d4f-a9e6bb65955d",
+              "Filters": [
+                {
+                  "CategoryFilter": {
+                    "Column": {
+                      "ColumnName": "Version",
+                      "DataSetIdentifier": {
+                        "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                      }
+                    },
+                    "Configuration": {
+                      "FilterListConfiguration": {
+                        "MatchOperator": "CONTAINS",
+                        "NullOption": "NON_NULLS_ONLY",
+                        "SelectAllOptions": "FILTER_ALL_VALUES"
+                      }
+                    },
+                    "FilterId": "9cf8a4a3-d657-4a3d-8e83-b7931d1966eb"
+                  }
+                }
+              ],
+              "ScopeConfiguration": {
+                "SelectedSheets": {
+                  "SheetVisualScopingConfigurations": [
+                    {
+                      "Scope": "ALL_VISUALS",
+                      "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8"
+                    }
+                  ]
+                }
+              },
+              "Status": "ENABLED"
+            }
+          ],
+          "Options": {
+            "ExcludedDataSetArns": [],
+            "QBusinessInsightsStatus": "DISABLED",
+            "WeekStart": "SUNDAY"
+          },
+          "ParameterDeclarations": [],
+          "Sheets": [
+            {
+              "ContentType": "INTERACTIVE",
+              "FilterControls": [
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "4f47a749-2ee4-433a-b293-75e47a6ec1d0",
+                    "SourceFilterId": "0459c7df-4163-4ac7-8f7c-959c7a4a440a",
+                    "Title": "Instance Name equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "6a117991-88df-4d97-afc5-e67fe758715a",
+                    "SourceFilterId": "1bf3e63a-7551-4f22-9550-5319fe566076",
+                    "Title": "Engine equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "5ef284f4-c210-40f4-9801-295dc8020585",
+                    "SourceFilterId": "7e06ab07-2544-464c-9a61-01b7a6711001",
+                    "Title": "RDS Class equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "638b7468-95bc-4fbc-91e4-2c5fd6057eb1",
+                    "SourceFilterId": "3d0ced6e-d5b4-49a2-95c9-79c163e5551d",
+                    "Title": "Multi-AZ Status equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "multi-az-type-dashboard-control",
+                    "SourceFilterId": "multi-az-type-dashboard-filter-id",
+                    "Title": "Multi-AZ Type equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "3b090f76-c7f8-4e2d-8b01-5affa8eed727",
+                    "SourceFilterId": "002f8575-2c4f-4788-9608-989793d2a877",
+                    "Title": "Read Replica equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "b1324370-7683-484f-a84c-c1d31c107139",
+                    "SourceFilterId": "7d97435d-2aa7-4b0b-b17b-cb26a0d26657",
+                    "Title": "Storage Type equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                },
+                {
+                  "Dropdown": {
+                    "DisplayOptions": {
+                      "SelectAllOptions": {
+                        "Visibility": "VISIBLE"
+                      }
+                    },
+                    "FilterControlId": "b1dc3aee-f248-41d6-933c-7c73e301bd9a",
+                    "SourceFilterId": "9cf8a4a3-d657-4a3d-8e83-b7931d1966eb",
+                    "Title": "Version equals",
+                    "Type": "MULTI_SELECT"
+                  }
+                }
+              ],
+              "Layouts": [
+                {
+                  "Configuration": {
+                    "GridLayout": {
+                      "CanvasSizeOptions": {
+                        "ScreenCanvasSizeOptions": {
+                          "OptimizedViewPortWidth": "1600px",
+                          "ResizeOption": "FIXED"
+                        }
+                      },
+                      "Elements": [
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "017571eb-a3a7-4f81-8e7f-bee380fe36f4",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 0,
+                          "RowSpan": 3
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "db5133e3-254e-4cb7-89c0-72c8c60235c0",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 3,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "0daa433e-515b-4a37-8153-46f6b7f21a63",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 15,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "acu-usage-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 27,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "ca694cce-6b86-4e4d-a3fa-14b50d59b59e",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 39,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "040a2996-18a8-478f-b6c2-73b3fc4516c7",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 51,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 18,
+                          "ElementId": "c01fe792-e699-486c-acb8-e792fb3999d1",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 63,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 18,
+                          "ColumnSpan": 18,
+                          "ElementId": "7639823c-d17b-4be7-9336-e0854063be0a",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 63,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "a1dd1b21-7bbf-402b-bdae-bf0b114907be",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 75,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 23,
+                          "ElementId": "77015324-251c-4514-8d27-c86d995c2cc1",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 87,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "max-connections-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 99,
+                          "RowSpan": 12
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "Name": "RDS Conso Main",
+              "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8",
+              "TextBoxes": [
+                {
+                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"48px\">Amazon RDS Consolidator Dashboard</inline>\n  </block>\n  <br/>\n  <block align=\"center\">\n    <inline font-size=\"16px\">Version 16a - 06/18/2025</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "017571eb-a3a7-4f81-8e7f-bee380fe36f4"
+                }
+              ],
+              "Visuals": [
+                {
+                  "TableVisual": {
+                    "VisualId": "db5133e3-254e-4cb7-89c0-72c8c60235c0",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Instances overview</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "TableAggregatedFieldWells": {
+                          "GroupBy": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "AccountID",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.AccountID.3.1750235858713"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.0.1750235842170"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Engine",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Engine.1.1750235849416"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Version",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Version.2.1750235853611"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "RDS Class",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.RDS Class.4.1750235867654"
+                              }
+                            },
+                            {
+                              "NumericalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "vCPUs",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.vCPUs.9.1750235907414"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Multi-AZ Status",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Multi-AZ Status.5.1750235877005"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Multi-AZ Type",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Multi-AZ Type.5a.1750235877006"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Read Replica",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Read Replica.6.1750235880610"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "RR Primary",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.RR Primary.7.1750235883193"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Storage Type",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Storage Type.8.1750235885556"
+                              }
+                            },
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Tags",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Tags.11.1750235933837"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "VisualId": "0daa433e-515b-4a37-8153-46f6b7f21a63",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>vCPU activity</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619832"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Avg vCPU Used",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Avg vCPU Used.1.1750235632740"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Peak vCPU Used",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Peak vCPU Used.2.1750235643018"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "vCPUs",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.vCPUs.3.1750235646609"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "VisualId": "acu-usage-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>ACUs usage</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235619833"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "ACUs",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs.1.1750235646610"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "VisualId": "ca694cce-6b86-4e4d-a3fa-14b50d59b59e",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>IOPS Activity</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235752983"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Read IOPS Avg",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Read IOPS Avg.1.1750235758692"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Read IOPS Max",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Read IOPS Max.2.1750235761998"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Write IOPS Avg",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Write IOPS Avg.3.1750235765361"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Write IOPS Max",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Write IOPS Max.4.1750235767906"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "VisualId": "040a2996-18a8-478f-b6c2-73b3fc4516c7",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Storage allocation</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750235993579"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Storage(GB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Storage(GB).1.1750235999483"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Used Storage(GB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Used Storage(GB).2.1750236002877"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Free Storage(GB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Free Storage(GB).3.1750236015103"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "BarChartVisual": {
+                    "VisualId": "c01fe792-e699-486c-acb8-e792fb3999d1",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Storage per instance</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "BarsArrangement": "STACKED",
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "VISIBLE"
+                      },
+                      "FieldWells": {
+                        "BarChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.2.1750236198398"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "AVERAGE"
+                                },
+                                "Column": {
+                                  "ColumnName": "Used Storage(GB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Used Storage(GB).0.1750236170267"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "AVERAGE"
+                                },
+                                "Column": {
+                                  "ColumnName": "Free Storage(GB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Free Storage(GB).2.1750236181901"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "GaugeChartVisual": {
+                    "VisualId": "7639823c-d17b-4be7-9336-e0854063be0a",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Memory usage</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "TargetValues": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "AVERAGE"
+                              },
+                              "Column": {
+                                "ColumnName": "Memory(GiB)",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Memory(GiB).0.1750236285945"
+                            }
+                          }
+                        ],
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "AVERAGE"
+                              },
+                              "Column": {
+                                "ColumnName": "Memory Free(GiB)",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Memory Free(GiB).1.1750236294551"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "WaterfallVisual": {
+                    "VisualId": "a1dd1b21-7bbf-402b-bdae-bf0b114907be",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Instances per version</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "VISIBLE"
+                      },
+                      "FieldWells": {
+                        "WaterfallChartAggregatedFieldWells": {
+                          "Categories": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Version",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Version.1.1750236434485"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "CategoricalMeasureField": {
+                                "AggregationFunction": "DISTINCT_COUNT",
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.0.1750236427484"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "WaterfallVisual": {
+                    "VisualId": "77015324-251c-4514-8d27-c86d995c2cc1",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Instances per engine</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "VISIBLE"
+                      },
+                      "FieldWells": {
+                        "WaterfallChartAggregatedFieldWells": {
+                          "Categories": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Engine",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Engine.0.1750236526632"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "CategoricalMeasureField": {
+                                "AggregationFunction": "DISTINCT_COUNT",
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.1.1750236533378"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "BarChartVisual": {
+                    "VisualId": "max-connections-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Max Connections</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "BarsArrangement": "STACKED",
+                      "Orientation": "VERTICAL",
+                      "FieldWells": {
+                        "BarChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750236600000"
+                              }
+                            }
+                          ],
+                          "Colors": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Instance Name.2.1750236600002"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Max Connections",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Max Connections.1.1750236600001"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "SortConfiguration": {
+                        "CategorySort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "ASC",
+                              "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.Timestamp.0.1750236600000"
+                            }
+                          }
+                        ],
+                        "ColorItemsLimit": {
+                          "OtherCategories": "EXCLUDE"
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "Permissions": [
+          {
+            "Principal": {
+              "Fn::Sub": "arn:aws:quicksight:${AWS::Region}:${AWS::AccountId}:user/default/${QuickSightUserName}"
+            },
+            "Actions": [
+              "quicksight:DescribeDashboard",
+              "quicksight:ListDashboardVersions",
+              "quicksight:UpdateDashboardPermissions",
+              "quicksight:QueryDashboard",
+              "quicksight:UpdateDashboard",
+              "quicksight:DeleteDashboard",
+              "quicksight:DescribeDashboardPermissions",
+              "quicksight:UpdateDashboardPublishedVersion"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "AnalysisUrl": {
+      "Description": "URL to access the QuickSight Analysis",
+      "Value": {
+        "Fn::Sub": "https://${AWS::Region}.quicksight.aws.amazon.com/sn/analyses/${AnalysisName}"
+      }
+    },
+    "DashboardUrl": {
+      "Description": "URL to access the QuickSight Dashboard",
+      "Value": {
+        "Fn::Sub": "https://${AWS::Region}.quicksight.aws.amazon.com/sn/dashboards/${DashboardName}-${AWS::StackName}"
+      }
+    }
+  }
+}
