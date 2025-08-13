@@ -46,10 +46,10 @@ The file **CWGetStatisticsPolicy.json** provides the policy model.
 ### 2. Run the script
 
 Once copied the latest version of the script (see versions at the bottom) in a CloudShell session of your RDS account (or in a Linux box where AWS CLI is installed), you may have to grant execution priviledges with, for instance:  
-`chmod +x get-vcpu-ram-io-v15e-stable.sh`  
+`chmod +x get-vcpu-ram-io-v16a-stable.sh`  
 
 Then simply run the script with 2 optional parameters:  
-`./get-vcpu-ram-io-v15e-stable.sh [duration] [engine]`  
+`./get-vcpu-ram-io-v16a-stable.sh [duration] [engine]`  
 where **duration** define how many days backward do you want statistics (default is 2) and **engine** is a filter on database engine for a restrictive data collection. Possible values are: ("postgres" "sqlserver-se" "sqlserver-ee" "sqlserver-web" "sqlserver-xe" "mariadb" "aurora-mysql" "aurora-postgresql" "db2-se" "oracle" "mysql"). Default (blank value) is all.
 
 Optionally, add the `-silent` option to disable terminal output of the data collected.
