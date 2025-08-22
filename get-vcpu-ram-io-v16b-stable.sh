@@ -12,7 +12,7 @@
 ##  V11: Added RDS instances listing with name and engine in a dedicated CSV file
 ##  V12: Added average vCPU used and peak vCPU used columns
 ##  V13b: Print 0 for missing values in vCPUs, Memory(GiB), Storage(GB), Memory Free(GiB), Memory Used%
-##        Added ACUs column for db.serverless instances
+##        Added ACUs average column for db.serverless instances
 ##  V13c: Filter out lines where no Timestamp is reported, csv fixes
 ##  V14a: Added Multi-AZ status to the main report
 ##  V14b: Added RR Primary column showing primary instance name for read replicas
@@ -26,6 +26,7 @@
 ##  V15e: Fix column order header
 ##  V16a: Extend Multi-AZ to DB and Cluster, added -silent flag for limited terminal output, Merge Read Replica for RDS and Aurora,
 ##        Collect instance tags, updated help
+##  V16b: Collect extended serverless metrics (ACU min/max configuration, average and peak usage)
 ##
 ##################################################################################################
 
@@ -45,7 +46,7 @@ show_help() {
     echo "  - Read Replica status (includes Aurora Readers)"
     echo "  - Read Replica Primary (Writer instance for Aurora Readers)"
     echo "  - Aurora Role (Writer/Reader for Aurora engines)"
-    echo "  - vCPUs and ACUs (for serverless instances)"
+    echo "  - vCPUs and ACUs average (for serverless instances)"
     echo "  - Memory metrics (GiB)"
     echo "  - Storage metrics (GB)"
     echo "  - CPU utilization (Average/Maximum %)"
@@ -226,6 +227,44 @@ get_serverless_capacity() {
         --query 'Datapoints[*].[Timestamp,Average,Maximum]' \
         --output text 2>&1); then
         echo "Error: Failed to get serverless capacity metrics: $output" >&2
+        return 1
+    fi
+    echo "$output"
+}
+
+get_acu_min_config() {
+    local instance_id=$1
+
+    if ! output=$(aws cloudwatch get-metric-statistics \
+        --namespace AWS/RDS \
+        --metric-name ACUConfiguredMin \
+        --dimensions Name=DBInstanceIdentifier,Value="$instance_id" \
+        --start-time "$START_TIME" \
+        --end-time "$END_TIME" \
+        --period 3600 \
+        --statistics Average \
+        --query 'Datapoints[*].[Timestamp,Average]' \
+        --output text 2>&1); then
+        echo "Error: Failed to get ACU min config metrics: $output" >&2
+        return 1
+    fi
+    echo "$output"
+}
+
+get_acu_max_config() {
+    local instance_id=$1
+
+    if ! output=$(aws cloudwatch get-metric-statistics \
+        --namespace AWS/RDS \
+        --metric-name ACUConfiguredMax \
+        --dimensions Name=DBInstanceIdentifier,Value="$instance_id" \
+        --start-time "$START_TIME" \
+        --end-time "$END_TIME" \
+        --period 3600 \
+        --statistics Average \
+        --query 'Datapoints[*].[Timestamp,Average]' \
+        --output text 2>&1); then
+        echo "Error: Failed to get ACU max config metrics: $output" >&2
         return 1
     fi
     echo "$output"
@@ -443,11 +482,11 @@ START_TIME=$(date -u -d "$EXTRACT_PERIOD"' day ago' +"$DATE_FORMAT")
 temp_file=$(mktemp)
 
 # Print header
-printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
-    "---------" "-------------" "----------" "------" "-------" "-------" "------------" "----------" "------------" "------------" "-----" "-----" "-----------" "-----------" "---------" "---------" "--------" "--------" \
+printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
+    "---------" "-------------" "----------" "------" "-------" "-------" "------------" "----------" "------------" "------------" "-----" "-----" "-----------" "-----------" "-----------" "-----------" "-----------" "---------" "---------" "--------" "--------" \
     "----------" "----------" "------------" "---------" "------------" "------------" "-------------" "-------------" "-------------" "-------------" "-----" >> "$temp_file"
-printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
-        "Timestamp" "AccountID" "Instance Name" "RDS Class" "Engine" "Storage Type" "Version" "Multi-AZ Status" "Multi-AZ Type" "Read Replica" "RR Primary" "Aurora Role" "vCPUs" "ACUs" "Memory(GiB)" "Storage(GB)" "Free(GB)" "Used(GB)" "CPU Avg%" "CPU Max%" \
+printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
+        "Timestamp" "AccountID" "Instance Name" "RDS Class" "Engine" "Storage Type" "Version" "Multi-AZ Status" "Multi-AZ Type" "Read Replica" "RR Primary" "Aurora Role" "vCPUs" "ACUs min" "ACUs max" "ACUs average" "ACUs peak" "Memory(GiB)" "Storage(GB)" "Free(GB)" "Used(GB)" "CPU Avg%" "CPU Max%" \
     "Avg vCPU Used" "Peak vCPU Used" "Mem Free(GiB)" "Mem Used%" "Read IOPS Avg" "Read IOPS Max" "Write IOPS Avg" "Write IOPS Max" "Max Connections" "Service Type" "Tags" > "$temp_file"
 
 # Define process_instance function
@@ -551,11 +590,31 @@ process_instance() {
     done < <(get_cloudwatch_metrics "$instance_id" "ReadIOPS")
 
     if is_serverless "$instance_class"; then
+        # Get ACU min configuration for serverless instances
+        declare -A acu_min_metrics
+        while read -r timestamp acu_min; do
+            if [ -n "$timestamp" ]; then
+                acu_min_metrics[$timestamp]=$acu_min
+            fi
+        done < <(get_acu_min_config "$instance_id")
+        
+        # Get ACU max configuration for serverless instances
+        declare -A acu_max_metrics
+        while read -r timestamp acu_max; do
+            if [ -n "$timestamp" ]; then
+                acu_max_metrics[$timestamp]=$acu_max
+            fi
+        done < <(get_acu_max_config "$instance_id")
+        
         # Get and process ACU metrics for serverless instances
         get_serverless_capacity "$instance_id" | while read -r timestamp acu_avg acu_max; do
             # Convert timestamp to local time with display format
             local_time=$(date -d "$timestamp" "+$DISPLAY_DATE_FORMAT")
 
+            # Get ACU min and max for this timestamp
+            acu_min=${acu_min_metrics[$timestamp]:-"0"}
+            acu_max_config=${acu_max_metrics[$timestamp]:-"0"}
+            
             # Format ACU values
             if [[ "$acu_avg" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
                 acu_avg=$(printf "%.1f" "$acu_avg")
@@ -564,15 +623,27 @@ process_instance() {
                 acu_avg="0"
                 acu_max="0"
             fi
+            
+            if [[ "$acu_min" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
+                acu_min=$(printf "%.1f" "$acu_min")
+            else
+                acu_min="0"
+            fi
+            
+            if [[ "$acu_max_config" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
+                acu_max_config=$(printf "%.1f" "$acu_max_config")
+            else
+                acu_max_config="0"
+            fi
 
             # Use ACU values instead of CPU for serverless instances
             cpu_avg=$acu_avg
             cpu_max=$acu_max
             vcpu_count_temp="0"  # For serverless instances, vCPUs is 0
             
-            # For serverless instances, avg_vcpu_used and peak_vcpu_used are the same as ACU values
-            avg_vcpu_used=$acu_avg
-            peak_vcpu_used=$acu_max
+            # For serverless instances, set avg_vcpu_used and peak_vcpu_used to 0
+            avg_vcpu_used="0"
+            peak_vcpu_used="0"
 
             # Get memory metrics for this timestamp
             memory_free_bytes=${memory_metrics[$timestamp]:-"0"}
@@ -674,7 +745,7 @@ process_instance() {
             
             # Only print lines where timestamp is not empty
             if [ -n "$timestamp" ]; then
-                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
+                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
                         "$local_time" \
                     "$ACCOUNT_ID" \
     "$instance_id" \
@@ -688,7 +759,10 @@ process_instance() {
                     "$rr_primary" \
                     "$aurora_role" \
                     "$vcpu_count_temp" \
+                    "$acu_min" \
+                    "$acu_max_config" \
                     "$acu_avg" \
+                    "$acu_max" \
                     "$memory_gib" \
                     "$allocated_storage" \
                     "$free_storage_gb" \
@@ -899,7 +973,7 @@ process_instance() {
             
             # Only print lines where timestamp is not empty
             if [ -n "$timestamp" ]; then
-                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
+                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
                         "$local_time" \
                     "$ACCOUNT_ID" \
     "$instance_id" \
@@ -913,6 +987,9 @@ process_instance() {
                     "$rr_primary" \
                     "$aurora_role" \
                     "${vcpu_count}" \
+                    "0" \
+                    "0" \
+                    "0" \
                     "0" \
                     "$memory_gib" \
                     "$allocated_storage" \
@@ -975,7 +1052,7 @@ fi
 
 # Create CSV version
 csv_file="$output_dir/rds_metrics_$(date +%Y%m%d_%H%M%S).csv"
-Header="Timestamp,AccountID,Instance Name,RDS Class,Engine,Storage Type,Version,Multi-AZ Status,Multi-AZ Type,Read Replica,RR Primary,Aurora Role,vCPUs,ACUs,Memory(GiB),Storage(GB),Free Storage(GB),Used Storage(GB),CPU Avg%,CPU Max%,Avg vCPU Used,Peak vCPU Used,Memory Free(GiB),Memory Used%,Read IOPS Avg,Read IOPS Max,Write IOPS Avg,Write IOPS Max,Max Connections,Service Type,Tags"
+Header="Timestamp,AccountID,Instance Name,RDS Class,Engine,Storage Type,Version,Multi-AZ Status,Multi-AZ Type,Read Replica,RR Primary,Aurora Role,vCPUs,ACUs min,ACUs max,ACUs average,ACUs peak,Memory(GiB),Storage(GB),Free Storage(GB),Used Storage(GB),CPU Avg%,CPU Max%,Avg vCPU Used,Peak vCPU Used,Memory Free(GiB),Memory Used%,Read IOPS Avg,Read IOPS Max,Write IOPS Avg,Write IOPS Max,Max Connections,Service Type,Tags"
 sed -i '1d' "$temp_file"
 sort -k1,1 -k2,2 "$temp_file" | sed 's/ \+/,/g' | sed 's/,$//g' >> "$csv_file"
 temp_file2="${2:-${csv_file}.tmp}"
