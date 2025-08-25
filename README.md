@@ -46,10 +46,10 @@ The file **CWGetStatisticsPolicy.json** provides the policy model.
 ### 2. Run the script
 
 Once copied the latest version of the script (see versions at the bottom) in a CloudShell session of your RDS account (or in a Linux box where AWS CLI is installed), you may have to grant execution priviledges with, for instance:  
-`chmod +x get-vcpu-ram-io-v16b-stable.sh`  
+`chmod +x get-vcpu-ram-io-v16c-stable.sh`  
 
 Then simply run the script with 2 optional parameters:  
-`./get-vcpu-ram-io-v16b-stable.sh [duration] [engine]`  
+`./get-vcpu-ram-io-v16c-stable.sh [duration] [engine]`  
 where **duration** define how many days backward do you want statistics (default is 2) and **engine** is a filter on database engine for a restrictive data collection. Possible values are: ("postgres" "sqlserver-se" "sqlserver-ee" "sqlserver-web" "sqlserver-xe" "mariadb" "aurora-mysql" "aurora-postgresql" "db2-se" "oracle" "mysql"). Default (blank value) is all.
 
 Optionally, add the `-silent` option to disable terminal output of the data collected.
@@ -125,7 +125,7 @@ Timestamp,Instance Name,RDS Class,Engine,Version,Multi-AZ Status,Multi-AZ Type,R
 
 ## Versions
 
-Last update: 2025, August the 22nd
+Last update: 2025, August the 25th
 
 - Data collector
   - V7: Collect ACUs avg and max for db.serverless instance class.
@@ -149,6 +149,7 @@ Last update: 2025, August the 22nd
   - V15e: Fix column order header
   - V16a: Extend Multi-AZ to DB and Cluster, added -silent flag for limited terminal output, Merge Read Replica for RDS and Aurora, Collect instance tags, updated help
   - V16b: Collect extended serverless metrics (ACU min/max configuration, average and peak usage)
+  - V16c: Collect Swap usage.
 
 - QuickSight CloudFormation template
   - V3: Initial template to deploy the dataset, the analysis and the dashboard. Build for CloudWatch collector V15e
@@ -156,6 +157,7 @@ Last update: 2025, August the 22nd
   - V5: Update multiples visuals, Added ACUs usage and max connections charts. 
   - V6: Update dataset and overview table with lastest csv format.
   - V7: Split viusals in multiple sheets (CPU/Storage/Memory), update dataset
+  - V8: Redesign and add visuals (Swap, Memory)
 
 - Datasource manifest
   - V1: initial release  

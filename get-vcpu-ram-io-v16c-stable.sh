@@ -27,6 +27,7 @@
 ##  V16a: Extend Multi-AZ to DB and Cluster, added -silent flag for limited terminal output, Merge Read Replica for RDS and Aurora,
 ##        Collect instance tags, updated help
 ##  V16b: Collect extended serverless metrics (ACU min/max configuration, average and peak usage)
+##  V16c: Collect Swap usage.
 ##
 ##################################################################################################
 
@@ -54,6 +55,7 @@ show_help() {
     echo "  - Memory usage (Free/Used %)"
     echo "  - IOPS metrics (Read/Write Average/Maximum)"
     echo "  - Max Database Connections"
+    echo "  - Swap usage"
     echo "  - Service Type (RDS/DocumentDB)"
     echo "  - Instance Tags"
     echo
@@ -412,6 +414,21 @@ get_aurora_writer() {
         --output text
 }
 
+get_swap_usage() {
+    local instance_id=$1
+
+    aws cloudwatch get-metric-statistics \
+        --namespace AWS/RDS \
+        --metric-name SwapUsage \
+        --dimensions Name=DBInstanceIdentifier,Value="$instance_id" \
+        --start-time "$START_TIME" \
+        --end-time "$END_TIME" \
+        --period 3600 \
+        --statistics Average \
+        --query 'Datapoints[*].[Timestamp,Average]' \
+        --output text
+}
+
 get_instance_tags() {
     local instance_id=$1
     local region=$(aws configure get region 2>/dev/null || echo "us-east-1")
@@ -485,9 +502,9 @@ temp_file=$(mktemp)
 printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
     "---------" "-------------" "----------" "------" "-------" "-------" "------------" "----------" "------------" "------------" "-----" "-----" "-----------" "-----------" "-----------" "-----------" "-----------" "---------" "---------" "--------" "--------" \
     "----------" "----------" "------------" "---------" "------------" "------------" "-------------" "-------------" "-------------" "-------------" "-----" >> "$temp_file"
-printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
+printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
         "Timestamp" "AccountID" "Instance Name" "RDS Class" "Engine" "Storage Type" "Version" "Multi-AZ Status" "Multi-AZ Type" "Read Replica" "RR Primary" "Aurora Role" "vCPUs" "ACUs min" "ACUs max" "ACUs average" "ACUs peak" "Memory(GiB)" "Storage(GB)" "Free(GB)" "Used(GB)" "CPU Avg%" "CPU Max%" \
-    "Avg vCPU Used" "Peak vCPU Used" "Mem Free(GiB)" "Mem Used%" "Read IOPS Avg" "Read IOPS Max" "Write IOPS Avg" "Write IOPS Max" "Max Connections" "Service Type" "Tags" > "$temp_file"
+    "Avg vCPU Used" "Peak vCPU Used" "Mem Free(GiB)" "Mem Used%" "Read IOPS Avg" "Read IOPS Max" "Write IOPS Avg" "Write IOPS Max" "Max Connections" "SwapUsage" "Service Type" "Tags" > "$temp_file"
 
 # Define process_instance function
 process_instance() {
@@ -558,7 +575,7 @@ process_instance() {
     fi
 
     # Create associative arrays for metrics
-    declare -A memory_metrics read_iops_avg read_iops_max write_iops_avg write_iops_max free_storage_metrics db_connections_max
+    declare -A memory_metrics read_iops_avg read_iops_max write_iops_avg write_iops_max free_storage_metrics db_connections_max swap_usage_metrics
 
     # Get memory metrics
     while read -r timestamp memory_free _; do
@@ -580,6 +597,13 @@ process_instance() {
             db_connections_max[$timestamp]=$max_connections
         fi
     done < <(get_cloudwatch_metrics "$instance_id" "DatabaseConnections")
+
+    # Get Swap usage metrics
+    while read -r timestamp swap_usage; do
+        if [ -n "$timestamp" ]; then
+            swap_usage_metrics[$timestamp]=$swap_usage
+        fi
+    done < <(get_swap_usage "$instance_id")
 
     # Get Read IOPS metrics
     while read -r timestamp avg max; do
@@ -742,10 +766,18 @@ process_instance() {
             if [[ "$max_connections" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
                 max_connections=$(printf "%.0f" "$max_connections")
             fi
+
+            # Get swap usage
+            swap_usage=${swap_usage_metrics[$timestamp]:-"0"}
+            
+            # Format swap usage if it exists
+            if [[ "$swap_usage" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
+                swap_usage=$(printf "%.1f" "$swap_usage")
+            fi
             
             # Only print lines where timestamp is not empty
             if [ -n "$timestamp" ]; then
-                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
+                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
                         "$local_time" \
                     "$ACCOUNT_ID" \
     "$instance_id" \
@@ -778,6 +810,7 @@ process_instance() {
                     "$write_avg" \
                     "$write_max" \
                     "$max_connections" \
+                    "$swap_usage" \
     "$SERVICE_TYPE" \
                     "\"$instance_tags\"" >> "$temp_file"
             fi
@@ -970,10 +1003,18 @@ process_instance() {
             if [[ "$max_connections" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
                 max_connections=$(printf "%.0f" "$max_connections")
             fi
+
+            # Get swap usage
+            swap_usage=${swap_usage_metrics[$timestamp]:-"0"}
+            
+            # Format swap usage if it exists
+            if [[ "$swap_usage" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
+                swap_usage=$(printf "%.1f" "$swap_usage")
+            fi
             
             # Only print lines where timestamp is not empty
             if [ -n "$timestamp" ]; then
-                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
+                printf "%-25s %-15s %-40s %-20s %-20s %-25s %-15s %-8s %-12s %-12s %-40s %-15s %-8s %-8s %-8s %-8s %-8s %-12s %-12s %-12s %-12s %-10s %-10s %-12s %-12s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-30s\n" \
                         "$local_time" \
                     "$ACCOUNT_ID" \
     "$instance_id" \
@@ -1006,6 +1047,7 @@ process_instance() {
                     "$write_avg" \
                     "$write_max" \
                     "$max_connections" \
+                    "$swap_usage" \
     "$SERVICE_TYPE" \
                     "\"$instance_tags\"" >> "$temp_file"
             fi
@@ -1052,7 +1094,7 @@ fi
 
 # Create CSV version
 csv_file="$output_dir/rds_metrics_$(date +%Y%m%d_%H%M%S).csv"
-Header="Timestamp,AccountID,Instance Name,RDS Class,Engine,Storage Type,Version,Multi-AZ Status,Multi-AZ Type,Read Replica,RR Primary,Aurora Role,vCPUs,ACUs min,ACUs max,ACUs average,ACUs peak,Memory(GiB),Storage(GB),Free Storage(GB),Used Storage(GB),CPU Avg%,CPU Max%,Avg vCPU Used,Peak vCPU Used,Memory Free(GiB),Memory Used%,Read IOPS Avg,Read IOPS Max,Write IOPS Avg,Write IOPS Max,Max Connections,Service Type,Tags"
+Header="Timestamp,AccountID,Instance Name,RDS Class,Engine,Storage Type,Version,Multi-AZ Status,Multi-AZ Type,Read Replica,RR Primary,Aurora Role,vCPUs,ACUs min,ACUs max,ACUs average,ACUs peak,Memory(GiB),Storage(GB),Free Storage(GB),Used Storage(GB),CPU Avg%,CPU Max%,Avg vCPU Used,Peak vCPU Used,Memory Free(GiB),Memory Used%,Read IOPS Avg,Read IOPS Max,Write IOPS Avg,Write IOPS Max,Max Connections,SwapUsage,Service Type,Tags"
 sed -i '1d' "$temp_file"
 sort -k1,1 -k2,2 "$temp_file" | sed 's/ \+/,/g' | sed 's/,$//g' >> "$csv_file"
 temp_file2="${2:-${csv_file}.tmp}"

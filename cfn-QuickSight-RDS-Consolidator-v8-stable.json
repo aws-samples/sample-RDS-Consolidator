@@ -40,13 +40,13 @@
         }
       }
     },
-    "StackName": "rds-consolidator-dataset-v16b-00"
+    "StackName": "rds-consolidator-dataset-v16c-00"
   },
   "Parameters": {
     "StackName": {
       "Type": "String",
       "Description": "Name of the CloudFormation stack",
-      "Default": "rds-consolidator-dataset-v16b-00"
+      "Default": "rds-consolidator-dataset-v16c-00"
     },
     "S3BucketName": {
       "Type": "String",
@@ -61,22 +61,22 @@
     "DatasetName": {
       "Type": "String",
       "Description": "Name for the QuickSight dataset",
-      "Default": "RDS-Consolidator-V16b-Dataset"
+      "Default": "RDS-Consolidator-V16c-Dataset"
     },
     "DataSourceName": {
       "Type": "String",
       "Description": "Name for the QuickSight data source",
-      "Default": "RDS-Consolidator-V16b-S3-DataSource"
+      "Default": "RDS-Consolidator-V16c-S3-DataSource"
     },
     "AnalysisName": {
       "Type": "String",
-      "Description": "RDS Consolidation V16b Analysis",
-      "Default": "RDS-Consolidator-V16b-Analysis"
+      "Description": "RDS Consolidation V16c Analysis",
+      "Default": "RDS-Consolidator-V16c-Analysis"
     },
     "DashboardName": {
       "Type": "String",
-      "Description": "RDS Consolidation V16b Dashboard",
-      "Default": "RDS-Consolidator-V16b-Dashboard"
+      "Description": "RDS Consolidation V16c Dashboard",
+      "Default": "RDS-Consolidator-V16c-Dashboard"
     },
     "QuickSightUserName": {
       "Type": "String",
@@ -130,7 +130,7 @@
         ]
       }
     },
-    "CFNRDSConsolidatorV16bQuickSightDataSet": {
+    "CFNRDSConsolidatorV16cQuickSightDataSet": {
       "Type": "AWS::QuickSight::DataSet",
       "DependsOn": "QuickSightS3DataSource",
       "Properties": {
@@ -204,19 +204,19 @@
                   "Type": "STRING"
                 },
                 {
-                  "Name": "ACUs Min",
+                  "Name": "ACUs min",
                   "Type": "STRING"
                 },
                 {
-                  "Name": "ACUs Max",
+                  "Name": "ACUs max",
                   "Type": "STRING"
                 },
                 {
-                  "Name": "ACUs Average",
+                  "Name": "ACUs average",
                   "Type": "STRING"
                 },
                 {
-                  "Name": "ACUs Peak",
+                  "Name": "ACUs peak",
                   "Type": "STRING"
                 },                
                 {
@@ -280,6 +280,10 @@
                   "Type": "STRING"
                 },
                 {
+                  "Name": "SwapUsage",
+                  "Type": "STRING"
+                },
+                {
                   "Name": "Service Type",
                   "Type": "STRING"
                 },
@@ -319,25 +323,25 @@
               },
               {
                 "CastColumnTypeOperation": {
-                  "ColumnName": "ACUs Min",
+                  "ColumnName": "ACUs min",
                   "NewColumnType": "DECIMAL"
                 }
               },
               {
                 "CastColumnTypeOperation": {
-                  "ColumnName": "ACUs Max",
+                  "ColumnName": "ACUs max",
                   "NewColumnType": "DECIMAL"
                 }
               },
               {
                 "CastColumnTypeOperation": {
-                  "ColumnName": "ACUs Average",
+                  "ColumnName": "ACUs average",
                   "NewColumnType": "DECIMAL"
                 }
               },
               {
                 "CastColumnTypeOperation": {
-                  "ColumnName": "ACUs Peak",
+                  "ColumnName": "ACUs peak",
                   "NewColumnType": "DECIMAL"
                 }
               },
@@ -430,6 +434,12 @@
                   "ColumnName": "Max Connections",
                   "NewColumnType": "INTEGER"
                 }
+              },
+              {
+                "CastColumnTypeOperation": {
+                  "ColumnName": "SwapUsage",
+                  "NewColumnType": "DECIMAL"
+                }
               }
             ]
           }
@@ -508,13 +518,27 @@
               },
               "Name": "Free vCPUs>0",
               "Expression": "ifelse({Free vCPUs} < 0, 0, {Free vCPUs})"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "Memory Used(GiB)",
+              "Expression": "({Memory(GiB)} * {Memory Used%}) / 100"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "Memory Free %",
+              "Expression": "({Memory Free(GiB)} / {Memory(GiB)}) * 100"
             }
           ],
           "DataSetIdentifierDeclarations": [
             {
               "DataSetArn": {
                 "Fn::GetAtt": [
-                  "CFNRDSConsolidatorV16bQuickSightDataSet",
+                  "CFNRDSConsolidatorV16cQuickSightDataSet",
                   "Arn"
                 ]
               },
@@ -953,17 +977,25 @@
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
-                          "ElementId": "a1dd1b21-7bbf-402b-bdae-bf0b114907be",
-                          "ElementType": "VISUAL",
+                          "ElementId": "distribution-explanation-text-box",
+                          "ElementType": "TEXT_BOX",
                           "RowIndex": 15,
+                          "RowSpan": 2
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "77015324-251c-4514-8d27-c86d995c2cc1",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 17,
                           "RowSpan": 12
                         },
                         {
                           "ColumnIndex": 0,
-                          "ColumnSpan": 23,
-                          "ElementId": "77015324-251c-4514-8d27-c86d995c2cc1",
+                          "ColumnSpan": 35,
+                          "ElementId": "a1dd1b21-7bbf-402b-bdae-bf0b114907be",
                           "ElementType": "VISUAL",
-                          "RowIndex": 27,
+                          "RowIndex": 29,
                           "RowSpan": 12
                         }
                       ]
@@ -1049,8 +1081,12 @@
               "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8",
               "TextBoxes": [
                 {
-                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"48px\">Amazon RDS Consolidator</inline>\n  </block>\n  <br/>\n  <block align=\"center\">\n    <inline font-size=\"16px\">Version 16b - 08/21/2025</inline>\n  </block>\n</text-box>",
+                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"48px\">Amazon RDS Consolidator</inline>\n  </block>\n  <br/>\n  <block align=\"center\">\n    <inline font-size=\"16px\">Version 16c - 08/22/2025</inline>\n  </block>\n</text-box>",
                   "SheetTextBoxId": "017571eb-a3a7-4f81-8e7f-bee380fe36f4"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The graphs below show the distribution of the instance collection per engine and version. It give hints on the consolidation capabilities and upgrade requirements.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "distribution-explanation-text-box"
                 }
               ],
               "Visuals": [
@@ -1130,23 +1166,23 @@
                             {
                               "NumericalDimensionField": {
                                 "Column": {
-                                  "ColumnName": "ACUs Min",
+                                  "ColumnName": "ACUs min",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
                                 },
-                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs Min.10.1750235907415"
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs min.10.1750235907415"
                               }
                             },
                             {
                               "NumericalDimensionField": {
                                 "Column": {
-                                  "ColumnName": "ACUs Max",
+                                  "ColumnName": "ACUs max",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
                                 },
-                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs Max.11.1750235907416"
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs max.11.1750235907416"
                               }
                             },
                             {
@@ -1420,15 +1456,23 @@
                           "ColumnSpan": 35,
                           "ElementId": "0daa433e-515b-4a37-8153-46f6b7f21a63",
                           "ElementType": "VISUAL",
-                          "RowIndex": 0,
+                          "RowIndex": 2,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "cpu-acu-explanation-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 0,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
                           "ElementId": "stacked-peak-vcpu-analysis",
                           "ElementType": "VISUAL",
-                          "RowIndex": 12,
+                          "RowIndex": 14,
                           "RowSpan": 12
                         },
                         {
@@ -1436,23 +1480,39 @@
                           "ColumnSpan": 35,
                           "ElementId": "stacked-avg-vcpu-analysis",
                           "ElementType": "VISUAL",
-                          "RowIndex": 24,
+                          "RowIndex": 26,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "vcpu-usage-explanation-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 38,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
                           "ElementId": "avg-vcpu-usage-per-instance-analysis",
                           "ElementType": "VISUAL",
-                          "RowIndex": 36,
+                          "RowIndex": 40,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "acu-explanation-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 52,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
                           "ElementId": "acu-usage-analysis-visual-id",
                           "ElementType": "VISUAL",
-                          "RowIndex": 48,
+                          "RowIndex": 54,
                           "RowSpan": 12
                         },
                         {
@@ -1460,7 +1520,7 @@
                           "ColumnSpan": 35,
                           "ElementId": "stacked-acu-average-analysis",
                           "ElementType": "VISUAL",
-                          "RowIndex": 60,
+                          "RowIndex": 66,
                           "RowSpan": 12
                         },
                         {
@@ -1468,7 +1528,7 @@
                           "ColumnSpan": 35,
                           "ElementId": "stacked-acu-peak-analysis",
                           "ElementType": "VISUAL",
-                          "RowIndex": 72,
+                          "RowIndex": 78,
                           "RowSpan": 12
                         }
                       ]
@@ -1478,6 +1538,20 @@
               ],
               "Name": "CPU and ACU",
               "SheetId": "cpu-sheet-id",
+              "TextBoxes": [
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 3 graphics below show the consolidated vCPUs activity for the instance set compared to the allocated vCPUs. It also break down par instance the average and peak vCPUs activity.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "cpu-acu-explanation-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">This visual shows the vCPU usage versus free vCPU in absolute value</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "vcpu-usage-explanation-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 3 graphics below show the consolidated average and peak ACU activity for the instance set compared. It also break down par instance the average and peak vCPUs activity.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "acu-explanation-text-box"
+                }
+              ],
               "Visuals": [
                 {
                   "LineChartVisual": {
@@ -1689,12 +1763,12 @@
                                   "SimpleNumericalAggregation": "SUM"
                                 },
                                 "Column": {
-                                  "ColumnName": "ACUs Average",
+                                  "ColumnName": "ACUs average",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
                                 },
-                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs Average.1.1750235646611"
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs average.1.1750235646611"
                               }
                             },
                             {
@@ -1703,12 +1777,12 @@
                                   "SimpleNumericalAggregation": "SUM"
                                 },
                                 "Column": {
-                                  "ColumnName": "ACUs Peak",
+                                  "ColumnName": "ACUs peak",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
                                 },
-                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs Peak.2.1750235646612"
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs peak.2.1750235646612"
                               }
                             }
                           ]
@@ -1745,13 +1819,13 @@
                             },
                             {
                               "FieldTooltipItem": {
-                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs Average.1.1750235646611",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs average.1.1750235646611",
                                 "Visibility": "VISIBLE"
                               }
                             },
                             {
                               "FieldTooltipItem": {
-                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs Peak.2.1750235646612",
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs peak.2.1750235646612",
                                 "Visibility": "VISIBLE"
                               }
                             }
@@ -1987,7 +2061,7 @@
                     "VisualId": "stacked-acu-average-analysis",
                     "Title": {
                       "FormatText": {
-                        "RichText": "<visual-title>Stacked ACUs Average activity</visual-title>"
+                        "RichText": "<visual-title>Stacked ACUs average activity</visual-title>"
                       },
                       "Visibility": "VISIBLE"
                     },
@@ -2028,7 +2102,7 @@
                                   "SimpleNumericalAggregation": "SUM"
                                 },
                                 "Column": {
-                                  "ColumnName": "ACUs Average",
+                                  "ColumnName": "ACUs average",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
@@ -2048,7 +2122,7 @@
                     "VisualId": "stacked-acu-peak-analysis",
                     "Title": {
                       "FormatText": {
-                        "RichText": "<visual-title>Stacked ACUs Peak activity</visual-title>"
+                        "RichText": "<visual-title>Stacked ACUs peak activity</visual-title>"
                       },
                       "Visibility": "VISIBLE"
                     },
@@ -2089,7 +2163,7 @@
                                   "SimpleNumericalAggregation": "SUM"
                                 },
                                 "Column": {
-                                  "ColumnName": "ACUs Peak",
+                                  "ColumnName": "ACUs peak",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
@@ -2125,24 +2199,48 @@
                           "ColumnSpan": 35,
                           "ElementId": "ca694cce-6b86-4e4d-a3fa-14b50d59b59e",
                           "ElementType": "VISUAL",
-                          "RowIndex": 0,
+                          "RowIndex": 2,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "io-storage-explanation-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 0,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
                           "ElementId": "040a2996-18a8-478f-b6c2-73b3fc4516c7",
                           "ElementType": "VISUAL",
-                          "RowIndex": 12,
+                          "RowIndex": 16,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "storage-allocation-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 14,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 18,
                           "ElementId": "c01fe792-e699-486c-acb8-e792fb3999d1",
                           "ElementType": "VISUAL",
-                          "RowIndex": 24,
+                          "RowIndex": 30,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "storage-ranking-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 28,
+                          "RowSpan": 2
                         }
                       ]
                     }
@@ -2151,6 +2249,20 @@
               ],
               "Name": "IO and Storage",
               "SheetId": "io-storage-sheet-id",
+              "TextBoxes": [
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The visual below show the consolidated IOPS activity average and peak for both the read and write.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "io-storage-explanation-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The visual below shows the sum of the allocated storage of the instance cohort. It also draws the space used vs. free GiB.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "storage-allocation-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The visual below ranks the instance per allocated and unsed storage. It tells how much GiB you can potentially save per instance.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "storage-ranking-text-box"
+                }
+              ],
               "Visuals": [
                 {
                   "LineChartVisual": {
@@ -2399,17 +2511,65 @@
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
+                          "ElementId": "memory-explanation-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 0,
+                          "RowSpan": 2
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 12,
                           "ElementId": "7639823c-d17b-4be7-9336-e0854063be0a",
                           "ElementType": "VISUAL",
-                          "RowIndex": 0,
+                          "RowIndex": 2,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 12,
+                          "ColumnSpan": 23,
+                          "ElementId": "memory-percentage-analysis-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 2,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "connections-explanation-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 14,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
                           "ElementId": "max-connections-analysis-visual-id",
                           "ElementType": "VISUAL",
-                          "RowIndex": 12,
+                          "RowIndex": 16,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "memory-pressure-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 28,
+                          "RowSpan": 2
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "memory-distribution-analysis-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 30,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "swap-usage-analysis-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 42,
                           "RowSpan": 12
                         }
                       ]
@@ -2419,6 +2579,20 @@
               ],
               "Name": "Memory",
               "SheetId": "memory-analysis-sheet-id",
+              "TextBoxes": [
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 2 visuals below tell the memory allocation for the cohort and the usage per instance. The right hand side visual indicates the memory pressure per instance.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "memory-explanation-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The visual below shows the number of connections per instance over the analysis period. It helps size the amount of memory of the instance and the connections in your parameter group.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "connections-explanation-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 2 visuals below help you to estimate the memory size and pressure of the cohort. The first graph stacks the used memory per instance. The second graph shows the evolution of the swap activity. An increase in this graph may indicate an under-sized memory.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "memory-pressure-text-box"
+                }
+              ],
               "Visuals": [
                 {
                   "GaugeChartVisual": {
@@ -2532,6 +2706,194 @@
                       }
                     }
                   }
+                },
+                {
+                  "BarChartVisual": {
+                    "VisualId": "memory-percentage-analysis-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Percentage of Used vs. Free Memory per instance</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "BarsArrangement": "STACKED_PERCENT",
+                      "Orientation": "HORIZONTAL",
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "VISIBLE"
+                      },
+                      "FieldWells": {
+                        "BarChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "memory.percentage.instance.name.field"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "AVERAGE"
+                                },
+                                "Column": {
+                                  "ColumnName": "Memory Free %",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "memory.free.percentage.field"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "AVERAGE"
+                                },
+                                "Column": {
+                                  "ColumnName": "Memory Used%",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "memory.used.percentage.field"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "VisualId": "memory-distribution-analysis-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Distribution of Used Memory per instance</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "memory.distribution.timestamp.field"
+                              }
+                            }
+                          ],
+                          "Colors": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "memory.distribution.instance.name.field"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Memory Used(GiB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "memory.distribution.used.field"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "Type": "STACKED_AREA"
+                    }
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "VisualId": "swap-usage-analysis-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Swap usage per instance (bytes)</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "swap.usage.timestamp.field"
+                              }
+                            }
+                          ],
+                          "Colors": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "swap.usage.instance.name.field"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "SwapUsage",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "swap.usage.field"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "Type": "STACKED_AREA"
+                    }
+                  }
                 }
               ]
             }
@@ -2585,13 +2947,27 @@
               },
               "Name": "Free vCPUs>0",
               "Expression": "ifelse({Free vCPUs} < 0, 0, {Free vCPUs})"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "Memory Used(GiB)",
+              "Expression": "({Memory(GiB)} * {Memory Used%}) / 100"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "Memory Free %",
+              "Expression": "({Memory Free(GiB)} / {Memory(GiB)}) * 100"
             }
           ],
           "DataSetIdentifierDeclarations": [
             {
               "DataSetArn": {
                 "Fn::GetAtt": [
-                  "CFNRDSConsolidatorV16bQuickSightDataSet",
+                  "CFNRDSConsolidatorV16cQuickSightDataSet",
                   "Arn"
                 ]
               },
@@ -3027,17 +3403,25 @@
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
-                          "ElementId": "a1dd1b21-7bbf-402b-bdae-bf0b114907be",
+                          "ElementId": "distribution-explanation-text-box-dashboard",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 15,
+                          "RowSpan": 2
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "77015324-251c-4514-8d27-c86d995c2cc1",
                           "ElementType": "VISUAL",
-                          "RowIndex": 63,
+                          "RowIndex": 17,
                           "RowSpan": 12
                         },
                         {
                           "ColumnIndex": 0,
-                          "ColumnSpan": 23,
-                          "ElementId": "77015324-251c-4514-8d27-c86d995c2cc1",
+                          "ColumnSpan": 35,
+                          "ElementId": "a1dd1b21-7bbf-402b-bdae-bf0b114907be",
                           "ElementType": "VISUAL",
-                          "RowIndex": 75,
+                          "RowIndex": 29,
                           "RowSpan": 12
                         }
                       ]
@@ -3049,8 +3433,12 @@
               "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8",
               "TextBoxes": [
                 {
-                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"48px\">Amazon RDS Consolidator Dashboard</inline>\n  </block>\n  <br/>\n  <block align=\"center\">\n    <inline font-size=\"16px\">Version 16b - 08/21/2025</inline>\n  </block>\n</text-box>",
+                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"48px\">Amazon RDS Consolidator Dashboard</inline>\n  </block>\n  <br/>\n  <block align=\"center\">\n    <inline font-size=\"16px\">Version 16c - 08/22/2025</inline>\n  </block>\n</text-box>",
                   "SheetTextBoxId": "017571eb-a3a7-4f81-8e7f-bee380fe36f4"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The graphs below show the distribution of the instance collection per engine and version. It give hints on the consolidation capabilities and upgrade requirements.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "distribution-explanation-text-box-dashboard"
                 }
               ],
               "Visuals": [
@@ -3136,23 +3524,23 @@
                             {
                               "NumericalDimensionField": {
                                 "Column": {
-                                  "ColumnName": "ACUs Min",
+                                  "ColumnName": "ACUs min",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
                                 },
-                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs Min.10.1750235907415"
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs min.10.1750235907415"
                               }
                             },
                             {
                               "NumericalDimensionField": {
                                 "Column": {
-                                  "ColumnName": "ACUs Max",
+                                  "ColumnName": "ACUs max",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
                                 },
-                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs Max.11.1750235907416"
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs max.11.1750235907416"
                               }
                             },
                             {
@@ -3344,15 +3732,23 @@
                           "ColumnSpan": 35,
                           "ElementId": "0daa433e-515b-4a37-8153-46f6b7f21a63",
                           "ElementType": "VISUAL",
-                          "RowIndex": 0,
+                          "RowIndex": 2,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "cpu-acu-explanation-text-box-dashboard",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 0,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
                           "ElementId": "stacked-peak-vcpu-dashboard",
                           "ElementType": "VISUAL",
-                          "RowIndex": 12,
+                          "RowIndex": 14,
                           "RowSpan": 12
                         },
                         {
@@ -3360,23 +3756,39 @@
                           "ColumnSpan": 35,
                           "ElementId": "stacked-avg-vcpu-dashboard",
                           "ElementType": "VISUAL",
-                          "RowIndex": 24,
+                          "RowIndex": 26,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "vcpu-usage-explanation-text-box-dashboard",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 38,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
                           "ElementId": "avg-vcpu-usage-per-instance-dashboard",
                           "ElementType": "VISUAL",
-                          "RowIndex": 36,
+                          "RowIndex": 40,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "acu-explanation-text-box-dashboard",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 52,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
                           "ElementId": "acu-usage-visual-id",
                           "ElementType": "VISUAL",
-                          "RowIndex": 48,
+                          "RowIndex": 54,
                           "RowSpan": 12
                         },
                         {
@@ -3384,7 +3796,7 @@
                           "ColumnSpan": 35,
                           "ElementId": "stacked-acu-average-dashboard",
                           "ElementType": "VISUAL",
-                          "RowIndex": 60,
+                          "RowIndex": 66,
                           "RowSpan": 12
                         },
                         {
@@ -3392,7 +3804,7 @@
                           "ColumnSpan": 35,
                           "ElementId": "stacked-acu-peak-dashboard",
                           "ElementType": "VISUAL",
-                          "RowIndex": 72,
+                          "RowIndex": 78,
                           "RowSpan": 12
                         }
                       ]
@@ -3402,6 +3814,20 @@
               ],
               "Name": "CPU and ACU",
               "SheetId": "cpu-dashboard-sheet-id",
+              "TextBoxes": [
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 3 graphics below show the consolidated vCPUs activity for the instance set compared to the allocated vCPUs. It also break down par instance the average and peak vCPUs activity.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "cpu-acu-explanation-text-box-dashboard"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">This visual shows the vCPU usage versus free vCPU in absolute value</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "vcpu-usage-explanation-text-box-dashboard"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 3 graphics below show the consolidated average and peak ACU activity for the instance set compared. It also break down par instance the average and peak vCPUs activity.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "acu-explanation-text-box-dashboard"
+                }
+              ],
               "Visuals": [
                 {
                   "LineChartVisual": {
@@ -3527,12 +3953,12 @@
                                   "SimpleNumericalAggregation": "SUM"
                                 },
                                 "Column": {
-                                  "ColumnName": "ACUs Average",
+                                  "ColumnName": "ACUs average",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
                                 },
-                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs Average.1.1750235646610"
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs average.1.1750235646610"
                               }
                             },
                             {
@@ -3541,12 +3967,12 @@
                                   "SimpleNumericalAggregation": "SUM"
                                 },
                                 "Column": {
-                                  "ColumnName": "ACUs Peak",
+                                  "ColumnName": "ACUs peak",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
                                 },
-                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs Peak.2.1750235646613"
+                                "FieldId": "84e6076f-554c-4f67-8a8c-1cabc42491f3.ACUs peak.2.1750235646613"
                               }
                             }
                           ]
@@ -3744,7 +4170,7 @@
                     "VisualId": "stacked-acu-average-dashboard",
                     "Title": {
                       "FormatText": {
-                        "RichText": "<visual-title>Stacked ACUs Average activity</visual-title>"
+                        "RichText": "<visual-title>Stacked ACUs average activity</visual-title>"
                       },
                       "Visibility": "VISIBLE"
                     },
@@ -3785,7 +4211,7 @@
                                   "SimpleNumericalAggregation": "SUM"
                                 },
                                 "Column": {
-                                  "ColumnName": "ACUs Average",
+                                  "ColumnName": "ACUs average",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
@@ -3805,7 +4231,7 @@
                     "VisualId": "stacked-acu-peak-dashboard",
                     "Title": {
                       "FormatText": {
-                        "RichText": "<visual-title>Stacked ACUs Peak activity</visual-title>"
+                        "RichText": "<visual-title>Stacked ACUs peak activity</visual-title>"
                       },
                       "Visibility": "VISIBLE"
                     },
@@ -3846,7 +4272,7 @@
                                   "SimpleNumericalAggregation": "SUM"
                                 },
                                 "Column": {
-                                  "ColumnName": "ACUs Peak",
+                                  "ColumnName": "ACUs peak",
                                   "DataSetIdentifier": {
                                     "Fn::Sub": "${DatasetName}-${AWS::StackName}"
                                   }
@@ -3882,24 +4308,48 @@
                           "ColumnSpan": 35,
                           "ElementId": "ca694cce-6b86-4e4d-a3fa-14b50d59b59e",
                           "ElementType": "VISUAL",
-                          "RowIndex": 0,
+                          "RowIndex": 2,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "io-storage-explanation-text-box-dashboard",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 0,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
                           "ElementId": "040a2996-18a8-478f-b6c2-73b3fc4516c7",
                           "ElementType": "VISUAL",
-                          "RowIndex": 12,
+                          "RowIndex": 16,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "storage-allocation-text-box-dashboard",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 14,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 18,
                           "ElementId": "c01fe792-e699-486c-acb8-e792fb3999d1",
                           "ElementType": "VISUAL",
-                          "RowIndex": 24,
+                          "RowIndex": 30,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "storage-ranking-text-box-dashboard",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 28,
+                          "RowSpan": 2
                         }
                       ]
                     }
@@ -3908,6 +4358,20 @@
               ],
               "Name": "IO and Storage",
               "SheetId": "io-storage-dashboard-sheet-id",
+              "TextBoxes": [
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The visual below show the consolidated IOPS activity average and peak for both the read and write.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "io-storage-explanation-text-box-dashboard"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The visual below shows the sum of the allocated storage of the instance cohort. It also draws the space used vs. free GiB.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "storage-allocation-text-box-dashboard"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The visual below ranks the instance per allocated and unsed storage. It tells how much GiB you can potentially save per instance.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "storage-ranking-text-box-dashboard"
+                }
+              ],
               "Visuals": [
                 {
                   "LineChartVisual": {
@@ -4112,17 +4576,65 @@
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
+                          "ElementId": "memory-explanation-text-box-dashboard",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 0,
+                          "RowSpan": 2
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 12,
                           "ElementId": "7639823c-d17b-4be7-9336-e0854063be0a",
                           "ElementType": "VISUAL",
-                          "RowIndex": 0,
+                          "RowIndex": 2,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 12,
+                          "ColumnSpan": 23,
+                          "ElementId": "memory-percentage-dashboard-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 2,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "connections-explanation-text-box-dashboard",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 14,
+                          "RowSpan": 2
                         },
                         {
                           "ColumnIndex": 0,
                           "ColumnSpan": 35,
                           "ElementId": "max-connections-visual-id",
                           "ElementType": "VISUAL",
-                          "RowIndex": 12,
+                          "RowIndex": 16,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "memory-pressure-text-box-dashboard",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 28,
+                          "RowSpan": 2
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "memory-distribution-dashboard-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 30,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "swap-usage-dashboard-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 42,
                           "RowSpan": 12
                         }
                       ]
@@ -4132,6 +4644,20 @@
               ],
               "Name": "Memory",
               "SheetId": "memory-dashboard-sheet-id",
+              "TextBoxes": [
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 2 visuals below tell the memory allocation for the cohort and the usage per instance. The right hand side visual indicates the memory pressure per instance.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "memory-explanation-text-box-dashboard"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The visual below shows the number of connections per instance over the analysis period. It helps size the amount of memory of the instance and the connections in your parameter group.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "connections-explanation-text-box-dashboard"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 2 visuals below help you to estimate the memory size and pressure of the cohort. The first graph stacks the used memory per instance. The second graph shows the evolution of the swap activity. An increase in this graph may indicate an under-sized memory.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "memory-pressure-text-box-dashboard"
+                }
+              ],
               "Visuals": [
                 {
                   "GaugeChartVisual": {
@@ -4243,6 +4769,194 @@
                           ]
                         }
                       }
+                    }
+                  }
+                },
+                {
+                  "BarChartVisual": {
+                    "VisualId": "memory-percentage-dashboard-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Percentage of Used vs. Free Memory per instance</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "BarsArrangement": "STACKED_PERCENT",
+                      "Orientation": "HORIZONTAL",
+                      "DataLabels": {
+                        "Overlap": "DISABLE_OVERLAP",
+                        "Visibility": "VISIBLE"
+                      },
+                      "FieldWells": {
+                        "BarChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "dashboard.memory.percentage.instance.name.field"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "AVERAGE"
+                                },
+                                "Column": {
+                                  "ColumnName": "Memory Free %",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "dashboard.memory.free.percentage.field"
+                              }
+                            },
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "AVERAGE"
+                                },
+                                "Column": {
+                                  "ColumnName": "Memory Used%",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "dashboard.memory.used.percentage.field"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "VisualId": "memory-distribution-dashboard-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Distribution of Used Memory per instance</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "dashboard.memory.distribution.timestamp.field"
+                              }
+                            }
+                          ],
+                          "Colors": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "dashboard.memory.distribution.instance.name.field"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "Memory Used(GiB)",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "dashboard.memory.distribution.used.field"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "Type": "STACKED_AREA"
+                    }
+                  }
+                },
+                {
+                  "LineChartVisual": {
+                    "VisualId": "swap-usage-dashboard-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Swap usage per instance (bytes)</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "LineChartAggregatedFieldWells": {
+                          "Category": [
+                            {
+                              "DateDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Timestamp",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "DateGranularity": "HOUR",
+                                "FieldId": "dashboard.swap.usage.timestamp.field"
+                              }
+                            }
+                          ],
+                          "Colors": [
+                            {
+                              "CategoricalDimensionField": {
+                                "Column": {
+                                  "ColumnName": "Instance Name",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "dashboard.swap.usage.instance.name.field"
+                              }
+                            }
+                          ],
+                          "Values": [
+                            {
+                              "NumericalMeasureField": {
+                                "AggregationFunction": {
+                                  "SimpleNumericalAggregation": "SUM"
+                                },
+                                "Column": {
+                                  "ColumnName": "SwapUsage",
+                                  "DataSetIdentifier": {
+                                    "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                  }
+                                },
+                                "FieldId": "dashboard.swap.usage.field"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "Type": "STACKED_AREA"
                     }
                   }
                 }
