@@ -28,6 +28,7 @@
 ##        Collect instance tags, updated help
 ##  V16b: Collect extended serverless metrics (ACU min/max configuration, average and peak usage)
 ##  V16c: Collect Swap usage.
+##  V16d: Fix MemoryFree report for serverless instance.
 ##
 ##################################################################################################
 
@@ -672,15 +673,15 @@ process_instance() {
             # Get memory metrics for this timestamp
             memory_free_bytes=${memory_metrics[$timestamp]:-"0"}
 
-            # Calculate memory usage
-            if [[ "$memory_free_bytes" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]] && [[ "$memory_gib" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
+            # Calculate memory usage - set to 0 for serverless instances
+            if is_serverless "$instance_class"; then
+                memory_free_gib=0
+                memory_used_pct=0
+            elif [[ "$memory_free_bytes" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]] && [[ "$memory_gib" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
                 memory_free_gib=$(awk "BEGIN {printf \"%.1f\", $memory_free_bytes/(1024*1024*1024)}")
                 memory_used_pct=0
-#                memory_used_pct=$(awk "BEGIN {printf \"%.1f\", (1 - $memory_free_gib/$memory_gib) * 100}")
             else
-#                memory_free_gib="0"
                 memory_free_gib=0
-#                memory_used_pct="0"
                 memory_used_pct=0
             fi
 
@@ -937,8 +938,11 @@ process_instance() {
             # Get memory metrics for this timestamp
             memory_free_bytes=${memory_metrics[$timestamp]:-"0"}
 
-            # Calculate memory usage
-            if [[ "$memory_free_bytes" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]] && [[ "$memory_gib" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
+            # Calculate memory usage - set to 0 for serverless instances
+            if is_serverless "$instance_class"; then
+                memory_free_gib="0"
+                memory_used_pct="0"
+            elif [[ "$memory_free_bytes" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]] && [[ "$memory_gib" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
                 memory_free_gib=$(awk "BEGIN {printf \"%.1f\", $memory_free_bytes/(1024*1024*1024)}")
                 memory_used_pct=$(awk "BEGIN {printf \"%.1f\", (1 - $memory_free_gib/$memory_gib) * 100}")
             else

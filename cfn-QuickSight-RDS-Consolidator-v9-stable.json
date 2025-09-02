@@ -40,13 +40,13 @@
         }
       }
     },
-    "StackName": "rds-consolidator-dataset-v16c-00"
+    "StackName": "rds-consolidator-dataset-v9-16d-20250901-20250901-00"
   },
   "Parameters": {
     "StackName": {
       "Type": "String",
       "Description": "Name of the CloudFormation stack",
-      "Default": "rds-consolidator-dataset-v16c-00"
+      "Default": "rds-consolidator-dataset-v9-16d-20250901-20250901-00"
     },
     "S3BucketName": {
       "Type": "String",
@@ -61,22 +61,22 @@
     "DatasetName": {
       "Type": "String",
       "Description": "Name for the QuickSight dataset",
-      "Default": "RDS-Consolidator-V16c-Dataset"
+      "Default": "RDS-Consolidator-v9-16d-20250901-20250901-Dataset"
     },
     "DataSourceName": {
       "Type": "String",
       "Description": "Name for the QuickSight data source",
-      "Default": "RDS-Consolidator-V16c-S3-DataSource"
+      "Default": "RDS-Consolidator-v9-16d-20250901-20250901-S3-DataSource"
     },
     "AnalysisName": {
       "Type": "String",
       "Description": "RDS Consolidation V16c Analysis",
-      "Default": "RDS-Consolidator-V16c-Analysis"
+      "Default": "RDS-Consolidator-v9-16d-20250901-20250901-Analysis"
     },
     "DashboardName": {
       "Type": "String",
       "Description": "RDS Consolidation V16c Dashboard",
-      "Default": "RDS-Consolidator-V16c-Dashboard"
+      "Default": "RDS-Consolidator-v9-16d-20250901-20250901-Dashboard"
     },
     "QuickSightUserName": {
       "Type": "String",
@@ -441,6 +441,7 @@
                   "NewColumnType": "DECIMAL"
                 }
               }
+
             ]
           }
         },
@@ -509,6 +510,41 @@
               "DataSetIdentifier": {
                 "Fn::Sub": "${DatasetName}-${AWS::StackName}"
               },
+              "Name": "Sum peak IOPS",
+              "Expression": "{Read IOPS Max} + {Write IOPS Max}"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "truncated-timestamp",
+              "Expression": "truncDate(\"HH\", Timestamp)"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "HourlySumPeakvCPU",
+              "Expression": "sumOver({Peak vCPU Used}, [{truncated-timestamp}], PRE_AGG)"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "Max vCPU",
+              "Expression": "192"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "HourlySumIOPSPeak",
+              "Expression": "sumOver({Sum peak IOPS}, [{truncated-timestamp}], PRE_AGG)"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
               "Name": "Free vCPUs",
               "Expression": "vCPUs-{Avg vCPU Used}"
             },
@@ -532,6 +568,20 @@
               },
               "Name": "Memory Free %",
               "Expression": "({Memory Free(GiB)} / {Memory(GiB)}) * 100"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "HourlyStorageUsedWith10PercentBuffer",
+              "Expression": "sumOver(({Used Storage(GB)}*1.1), [{truncated-timestamp}], PRE_AGG)"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "HourlyMemoryUsed",
+              "Expression": "sumOver({Memory(GiB)}-{Memory Free(GiB)}, [{truncated-timestamp}], PRE_AGG)"
             }
           ],
           "DataSetIdentifierDeclarations": [
@@ -997,6 +1047,70 @@
                           "ElementType": "VISUAL",
                           "RowIndex": 29,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "sizing-recommendation-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 41,
+                          "RowSpan": 3
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "disclaimer-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 44,
+                          "RowSpan": 4
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 18,
+                          "ElementId": "vcpu-gauge-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 54,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 18,
+                          "ColumnSpan": 17,
+                          "ElementId": "avg-peak-vcpu-gauge-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 54,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 12,
+                          "ElementId": "iops-gauge-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 66,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 12,
+                          "ColumnSpan": 12,
+                          "ElementId": "storage-kpi-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 66,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 24,
+                          "ColumnSpan": 11,
+                          "ElementId": "memory-kpi-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 66,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "bottom-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 78,
+                          "RowSpan": 8
                         }
                       ]
                     }
@@ -1081,12 +1195,24 @@
               "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8",
               "TextBoxes": [
                 {
-                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"48px\">Amazon RDS Consolidator</inline>\n  </block>\n  <br/>\n  <block align=\"center\">\n    <inline font-size=\"16px\">Version 16c - 08/22/2025</inline>\n  </block>\n</text-box>",
+                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"48px\">Amazon RDS Consolidator</inline>\n  </block>\n  <br/>\n  <block align=\"center\">\n    <inline font-size=\"16px\">Version 9-16d - 09/01/2025</inline>\n  </block>\n</text-box>",
                   "SheetTextBoxId": "017571eb-a3a7-4f81-8e7f-bee380fe36f4"
                 },
                 {
                   "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The graphs below show the distribution of the instance collection per engine and version. It give hints on the consolidation capabilities and upgrade requirements.</inline>\n  </block>\n</text-box>",
                   "SheetTextBoxId": "distribution-explanation-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"40px\">Sizing Recommendation</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "sizing-recommendation-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">Disclaimer: This tool provides indicative sizing guidance for a consolidation scenario. The recommendations are based on peak CPU and I/O values and on calculated assumptions for memory. Results should be verified by an AWS database consultant. This tool is not supported by AWS. Results are for informational purposes only and should not be used as the sole basis for production planning.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "disclaimer-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">Sizing recommendation assumptions:</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Peak vCPU: Shows the highest vCPUs peak value of the cohort at a point in time during the period,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Average Peak vCPU: Shows the average value of the peks observed over the period. This gives an indication of the vCPUs usage variability,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Required IOPS: Shows the highest number of IOPS for the cohort at a point in time during the period,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Recommended Storage: Shows in GiB the last sum of used storage of the cohort plus a 10% buffer,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Recommended RAM: Shows in GiB, the amount of used RAM for the cohort,</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "bottom-text-box"
                 }
               ],
               "Visuals": [
@@ -1433,6 +1559,226 @@
                       "Visibility": "VISIBLE"
                     },
                     "VisualId": "77015324-251c-4514-8d27-c86d995c2cc1"
+                  }
+                },
+                {
+                  "GaugeChartVisual": {
+                    "VisualId": "vcpu-gauge-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Needed vCPUs for cohort compared to max vCPU in RDS</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "MAX"
+                              },
+                              "Column": {
+                                "ColumnName": "HourlySumPeakvCPU",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "vcpu.gauge.value.field"
+                            }
+                          }
+                        ],
+                        "TargetValues": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "AVERAGE"
+                              },
+                              "Column": {
+                                "ColumnName": "Max vCPU",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "vcpu.gauge.target.field"
+                            }
+                          }
+                        ]
+                      },
+                      "DataLabels": {
+                        "Visibility": "VISIBLE",
+                        "LabelFontConfiguration": {
+                          "FontSize": {
+                            "Relative": "EXTRA_LARGE"
+                          }
+                        }
+                      },
+                      "GaugeChartOptions": {
+                        "PrimaryValueDisplayType": "ACTUAL"
+                      }
+                    }
+                  }
+                },
+                {
+                  "GaugeChartVisual": {
+                    "VisualId": "avg-peak-vcpu-gauge-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Average Peak of the vCPU Usage in the cohort</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "AVERAGE"
+                              },
+                              "Column": {
+                                "ColumnName": "HourlySumPeakvCPU",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "avg.peak.vcpu.gauge.value.field"
+                            }
+                          }
+                        ]
+                      },
+                      "DataLabels": {
+                        "Visibility": "VISIBLE",
+                        "LabelFontConfiguration": {
+                          "FontSize": {
+                            "Relative": "EXTRA_LARGE"
+                          }
+                        }
+                      },
+                      "GaugeChartOptions": {
+                        "PrimaryValueDisplayType": "ACTUAL"
+                      }
+                    }
+                  }
+                },
+                {
+                  "KPIVisual": {
+                    "VisualId": "iops-gauge-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>required IOPS for this cohort</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "MAX"
+                              },
+                              "Column": {
+                                "ColumnName": "HourlySumIOPSPeak",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "iops.gauge.value.field"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "KPIVisual": {
+                    "VisualId": "storage-kpi-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Recommended storage (GiB)</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "MAX"
+                              },
+                              "Column": {
+                                "ColumnName": "HourlyStorageUsedWith10PercentBuffer",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "storage.kpi.value.field"
+                            }
+                          }
+                        ],
+                        "TrendGroups": [
+                          {
+                            "DateDimensionField": {
+                              "Column": {
+                                "ColumnName": "Timestamp",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "DateGranularity": "HOUR",
+                              "FieldId": "storage.kpi.trend.field"
+                            }
+                          }
+                        ]
+                      },
+                      "SortConfiguration": {
+                        "TrendGroupSort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "DESC",
+                              "FieldId": "storage.kpi.trend.field"
+                            }
+                          }
+                        ]
+                      },
+                      "KPIOptions": {
+                        "PrimaryValueDisplayType": "ACTUAL"
+                      }
+                    }
+                  }
+                },
+                {
+                  "KPIVisual": {
+                    "VisualId": "memory-kpi-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Recommended RAM (GiB)</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "MAX"
+                              },
+                              "Column": {
+                                "ColumnName": "HourlyMemoryUsed",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "memory.kpi.value.field"
+                            }
+                          }
+                        ]
+                      }
+                    }
                   }
                 }
               ]
@@ -2589,7 +2935,7 @@
                   "SheetTextBoxId": "connections-explanation-text-box"
                 },
                 {
-                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 2 visuals below help you to estimate the memory size and pressure of the cohort. The first graph stacks the used memory per instance. The second graph shows the evolution of the swap activity. An increase in this graph may indicate an under-sized memory.</inline>\n  </block>\n</text-box>",
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 2 visuals below help you to estimate the memory size and pressure of the cohort. The first graph stacks the used memory per instance. The second graph shows the evolution of the swap activity. An increase in this graph may indicate an under-sized memory. Note that the SwapUsage is only collected for Oracle, PostgreSQL, MySQL and MariaDB.</inline>\n  </block>\n</text-box>",
                   "SheetTextBoxId": "memory-pressure-text-box"
                 }
               ],
@@ -2599,7 +2945,7 @@
                     "VisualId": "7639823c-d17b-4be7-9336-e0854063be0a",
                     "Title": {
                       "FormatText": {
-                        "RichText": "<visual-title>Average Free memory vs. allocated</visual-title>"
+                        "RichText": "<visual-title>Average Free memory vs. allocated (GiB)</visual-title>"
                       },
                       "Visibility": "VISIBLE"
                     },
@@ -2961,6 +3307,55 @@
               },
               "Name": "Memory Free %",
               "Expression": "({Memory Free(GiB)} / {Memory(GiB)}) * 100"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "Sum peak IOPS",
+              "Expression": "{Read IOPS Max} + {Write IOPS Max}"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "truncated-timestamp",
+              "Expression": "truncDate(\"HH\", Timestamp)"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "HourlySumPeakvCPU",
+              "Expression": "sumOver({Peak vCPU Used}, [{truncated-timestamp}], PRE_AGG)"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "Max vCPU",
+              "Expression": "192"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "HourlySumIOPSPeak",
+              "Expression": "sumOver({Sum peak IOPS}, [{truncated-timestamp}], PRE_AGG)"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "HourlyStorageUsedWith10PercentBuffer",
+              "Expression": "sumOver(({Used Storage(GB)}*1.1), [{truncated-timestamp}], PRE_AGG)"
+            },
+            {
+              "DataSetIdentifier": {
+                "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+              },
+              "Name": "HourlyMemoryUsed",
+              "Expression": "sumOver({Memory(GiB)}-{Memory Free(GiB)}, [{truncated-timestamp}], PRE_AGG)"
             }
           ],
           "DataSetIdentifierDeclarations": [
@@ -3423,6 +3818,78 @@
                           "ElementType": "VISUAL",
                           "RowIndex": 29,
                           "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "sizing-recommendation-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 41,
+                          "RowSpan": 3
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "disclaimer-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 44,
+                          "RowSpan": 4
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "sizing-assumptions-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 48,
+                          "RowSpan": 6
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 18,
+                          "ElementId": "vcpu-gauge-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 54,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 18,
+                          "ColumnSpan": 17,
+                          "ElementId": "avg-peak-vcpu-gauge-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 54,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 12,
+                          "ElementId": "iops-gauge-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 66,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 12,
+                          "ColumnSpan": 12,
+                          "ElementId": "storage-kpi-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 66,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 24,
+                          "ColumnSpan": 11,
+                          "ElementId": "memory-kpi-visual-id",
+                          "ElementType": "VISUAL",
+                          "RowIndex": 66,
+                          "RowSpan": 12
+                        },
+                        {
+                          "ColumnIndex": 0,
+                          "ColumnSpan": 35,
+                          "ElementId": "bottom-text-box",
+                          "ElementType": "TEXT_BOX",
+                          "RowIndex": 78,
+                          "RowSpan": 8
                         }
                       ]
                     }
@@ -3433,12 +3900,28 @@
               "SheetId": "439adb10-3211-4e15-9989-c1e56dd4e9a8",
               "TextBoxes": [
                 {
-                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"48px\">Amazon RDS Consolidator Dashboard</inline>\n  </block>\n  <br/>\n  <block align=\"center\">\n    <inline font-size=\"16px\">Version 16c - 08/22/2025</inline>\n  </block>\n</text-box>",
+                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"48px\">Amazon RDS Consolidator Dashboard</inline>\n  </block>\n  <br/>\n  <block align=\"center\">\n    <inline font-size=\"16px\">Version 16c - 09/01/2025</inline>\n  </block>\n</text-box>",
                   "SheetTextBoxId": "017571eb-a3a7-4f81-8e7f-bee380fe36f4"
                 },
                 {
                   "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The graphs below show the distribution of the instance collection per engine and version. It give hints on the consolidation capabilities and upgrade requirements.</inline>\n  </block>\n</text-box>",
                   "SheetTextBoxId": "distribution-explanation-text-box-dashboard"
+                },
+                {
+                  "Content": "<text-box>\n  <block align=\"center\">\n    <inline font-size=\"40px\">Sizing Recommendation</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "sizing-recommendation-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">Disclaimer: This tool provides indicative sizing guidance for a consolidation scenario. The recommendations are based on peak CPU and I/O values and on calculated assumptions for memory. Results should be verified by an AWS database consultant. This tool is not supported by AWS. Results are for informational purposes only and should not be used as the sole basis for production planning.</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "disclaimer-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">Sizing recommendation assumptions:</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Peak vCPU: Shows the highest vCPUs peak value of the cohort at a point in time during the period,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Average Peak vCPU: Shows the average value of the peks observed over the period. This gives an indication of the vCPUs usage variability,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Required IOPS: Shows the highest number of IOPS for the cohort at a point in time during the period,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Recommended Storage: Shows in GiB the last sum of used storage of the cohort plus a 10% buffer,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Recommended RAM: Shows in GiB, the amount of used RAM for the cohort,</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "sizing-assumptions-text-box"
+                },
+                {
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">Sizing recommendation assumptions:</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Peak vCPU: Shows the highest vCPUs peak value of the cohort at a point in time during the period,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Average Peak vCPU: Shows the average value of the peks observed over the period. This gives an indication of the vCPUs usage variability,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Required IOPS: Shows the highest number of IOPS for the cohort at a point in time during the period,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Recommended Storage: Shows in GiB the last sum of used storage of the cohort plus a 10% buffer,</inline>\n  </block>\n  <br/>\n  <block>\n    <inline font-size=\"16px\">- Recommended RAM: Shows in GiB, the amount of used RAM for the cohort,</inline>\n  </block>\n</text-box>",
+                  "SheetTextBoxId": "bottom-text-box"
                 }
               ],
               "Visuals": [
@@ -3707,6 +4190,226 @@
                             }
                           ]
                         }
+                      }
+                    }
+                  }
+                },
+                {
+                  "GaugeChartVisual": {
+                    "VisualId": "vcpu-gauge-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Needed vCPUs for cohort compared to max vCPU in RDS</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "MAX"
+                              },
+                              "Column": {
+                                "ColumnName": "HourlySumPeakvCPU",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "vcpu.gauge.value.field"
+                            }
+                          }
+                        ],
+                        "TargetValues": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "AVERAGE"
+                              },
+                              "Column": {
+                                "ColumnName": "Max vCPU",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "vcpu.gauge.target.field"
+                            }
+                          }
+                        ]
+                      },
+                      "DataLabels": {
+                        "Visibility": "VISIBLE",
+                        "LabelFontConfiguration": {
+                          "FontSize": {
+                            "Relative": "EXTRA_LARGE"
+                          }
+                        }
+                      },
+                      "GaugeChartOptions": {
+                        "PrimaryValueDisplayType": "ACTUAL"
+                      }
+                    }
+                  }
+                },
+                {
+                  "GaugeChartVisual": {
+                    "VisualId": "avg-peak-vcpu-gauge-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Average Peak of the vCPU Usage in the cohort</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "AVERAGE"
+                              },
+                              "Column": {
+                                "ColumnName": "HourlySumPeakvCPU",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "avg.peak.vcpu.gauge.value.field"
+                            }
+                          }
+                        ]
+                      },
+                      "DataLabels": {
+                        "Visibility": "VISIBLE",
+                        "LabelFontConfiguration": {
+                          "FontSize": {
+                            "Relative": "EXTRA_LARGE"
+                          }
+                        }
+                      },
+                      "GaugeChartOptions": {
+                        "PrimaryValueDisplayType": "ACTUAL"
+                      }
+                    }
+                  }
+                },
+                {
+                  "KPIVisual": {
+                    "VisualId": "iops-gauge-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>required IOPS for this cohort</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "MAX"
+                              },
+                              "Column": {
+                                "ColumnName": "HourlySumIOPSPeak",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "iops.gauge.value.field"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                {
+                  "KPIVisual": {
+                    "VisualId": "storage-kpi-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Recommended storage (GiB)</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "MAX"
+                              },
+                              "Column": {
+                                "ColumnName": "HourlyStorageUsedWith10PercentBuffer",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "storage.kpi.value.field"
+                            }
+                          }
+                        ],
+                        "TrendGroups": [
+                          {
+                            "DateDimensionField": {
+                              "Column": {
+                                "ColumnName": "Timestamp",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "DateGranularity": "HOUR",
+                              "FieldId": "storage.kpi.trend.field"
+                            }
+                          }
+                        ]
+                      },
+                      "SortConfiguration": {
+                        "TrendGroupSort": [
+                          {
+                            "FieldSort": {
+                              "Direction": "DESC",
+                              "FieldId": "storage.kpi.trend.field"
+                            }
+                          }
+                        ]
+                      },
+                      "KPIOptions": {
+                        "PrimaryValueDisplayType": "ACTUAL"
+                      }
+                    }
+                  }
+                },
+                {
+                  "KPIVisual": {
+                    "VisualId": "memory-kpi-visual-id",
+                    "Title": {
+                      "FormatText": {
+                        "RichText": "<visual-title>Recommended RAM (GiB)</visual-title>"
+                      },
+                      "Visibility": "VISIBLE"
+                    },
+                    "ChartConfiguration": {
+                      "FieldWells": {
+                        "Values": [
+                          {
+                            "NumericalMeasureField": {
+                              "AggregationFunction": {
+                                "SimpleNumericalAggregation": "MAX"
+                              },
+                              "Column": {
+                                "ColumnName": "HourlyMemoryUsed",
+                                "DataSetIdentifier": {
+                                  "Fn::Sub": "${DatasetName}-${AWS::StackName}"
+                                }
+                              },
+                              "FieldId": "memory.kpi.value.field"
+                            }
+                          }
+                        ]
                       }
                     }
                   }
@@ -4654,7 +5357,7 @@
                   "SheetTextBoxId": "connections-explanation-text-box-dashboard"
                 },
                 {
-                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 2 visuals below help you to estimate the memory size and pressure of the cohort. The first graph stacks the used memory per instance. The second graph shows the evolution of the swap activity. An increase in this graph may indicate an under-sized memory.</inline>\n  </block>\n</text-box>",
+                  "Content": "<text-box>\n  <block>\n    <inline font-size=\"16px\">The 2 visuals below help you to estimate the memory size and pressure of the cohort. The first graph stacks the used memory per instance. The second graph shows the evolution of the swap activity. An increase in this graph may indicate an under-sized memory. Note that the SwapUsage is only collected for Oracle, PostgreSQL, MySQL and MariaDB.</inline>\n  </block>\n</text-box>",
                   "SheetTextBoxId": "memory-pressure-text-box-dashboard"
                 }
               ],
@@ -4664,7 +5367,7 @@
                     "VisualId": "7639823c-d17b-4be7-9336-e0854063be0a",
                     "Title": {
                       "FormatText": {
-                        "RichText": "<visual-title>Average Free memory vs. allocated</visual-title>"
+                        "RichText": "<visual-title>Average Free memory vs. allocated (GiB)</visual-title>"
                       },
                       "Visibility": "VISIBLE"
                     },
