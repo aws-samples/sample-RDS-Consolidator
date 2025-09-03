@@ -40,13 +40,13 @@
         }
       }
     },
-    "StackName": "rds-consolidator-dataset-v9-16d-20250901-20250901-00"
+    "StackName": "rds-consolidator-dataset-v9-16d-20250901-00"
   },
   "Parameters": {
     "StackName": {
       "Type": "String",
       "Description": "Name of the CloudFormation stack",
-      "Default": "rds-consolidator-dataset-v9-16d-20250901-20250901-00"
+      "Default": "rds-consolidator-dataset-v9-16d-20250901-00"
     },
     "S3BucketName": {
       "Type": "String",
@@ -61,22 +61,22 @@
     "DatasetName": {
       "Type": "String",
       "Description": "Name for the QuickSight dataset",
-      "Default": "RDS-Consolidator-v9-16d-20250901-20250901-Dataset"
+      "Default": "RDS-Consolidator-v9-16d-20250901-Dataset"
     },
     "DataSourceName": {
       "Type": "String",
       "Description": "Name for the QuickSight data source",
-      "Default": "RDS-Consolidator-v9-16d-20250901-20250901-S3-DataSource"
+      "Default": "RDS-Consolidator-v9-16d-20250901-S3-DataSource"
     },
     "AnalysisName": {
       "Type": "String",
       "Description": "RDS Consolidation V16c Analysis",
-      "Default": "RDS-Consolidator-v9-16d-20250901-20250901-Analysis"
+      "Default": "RDS-Consolidator-v9-16d-20250901-Analysis"
     },
     "DashboardName": {
       "Type": "String",
       "Description": "RDS Consolidation V16c Dashboard",
-      "Default": "RDS-Consolidator-v9-16d-20250901-20250901-Dashboard"
+      "Default": "RDS-Consolidator-v9-16d-20250901-Dashboard"
     },
     "QuickSightUserName": {
       "Type": "String",
