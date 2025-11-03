@@ -42,6 +42,8 @@ Create a role with the appriopriate permission and associate this role with the 
 
 The file **CWGetStatisticsPolicy.json** provides the policy model.
 
+Note that the IAM policy in `CWGetStatisticsPolicy.json` use a wildcard (*) for the `Resource` attribute. It is strongly suggested replacing it with the actual resource ARNs that are needed. The user should follow the principle of least privilege.
+
 
 ### 2. Run the script
 
